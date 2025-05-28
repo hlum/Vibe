@@ -57,6 +57,7 @@ struct SearchAndDownloadView: View {
             
             
             ScrollView {
+                Text("\(downloadingProcesses.count)")
                 ForEach(downloadingProcesses) { process in
                     VStack(alignment: .leading, spacing: 20) {
                         Text(process.fileName)

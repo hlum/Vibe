@@ -37,12 +37,17 @@ enum YoutubeDownloaderError: LocalizedError {
 
 
 final class YoutubeDownloader {
-    var currentDownloadingProcesses: (([DownloadingProcess]) -> Void)? = nil
+    private let swiftDataManager: SwiftDataManager
+    var currentDownloadingProcesses: (([DownloadingProcess]) -> Void)?
     private var currentProcesses: [DownloadingProcess] = []
     private var activeDownloads: [String: FileDownloader] = [:]
     private let maxRetries = 3
     
-    func downloadAudioAndSave(from urlString: String, fileName: String) async throws -> URL {
+    init(swiftDataManager: SwiftDataManager) {
+        self.swiftDataManager = swiftDataManager
+    }
+    
+    func downloadAudioAndSave(from urlString: String, fileName: String) async throws {
         guard !urlString.isEmpty else {
             throw YoutubeDownloaderError.invalidURL
         }
@@ -60,7 +65,11 @@ final class YoutubeDownloader {
             let downloadedURL = try await downloadFileWithRetry(fileName: fileName, from: downloadableURL)
             let data = try Data(contentsOf: downloadedURL)
             
-            return try saveFile(with: data, fileName: fileName)
+            let localURL = try saveFile(with: data, fileName: fileName)
+            let duration = try await AudioManager.shared.getAudioDuration(from: localURL)
+            let downloadedAudio = DownloadedAudio(title: fileName, originalURL: urlString, localURL: localURL.absoluteString, duration: duration)
+            try await swiftDataManager.save(downloadedAudio)
+            
         } catch let error as YoutubeDownloaderError {
             throw error
         } catch {
@@ -116,10 +125,14 @@ final class YoutubeDownloader {
         activeDownloads[currentProcess.id] = fileDownloader
         
         return try await withCheckedThrowingContinuation { continuation in
-            fileDownloader.download(
-                from: url) { progress,finishedByte,totalByte in
+            
+            fileDownloader
+                .download(from: url) { progress,finishedByte,totalByte in
+                    
                     currentProcess = DownloadingProcess(id: currentProcess.id, fileName: fileName, progress: progress, expectedByte: Double(totalByte), finishedByte: Double(finishedByte))
+                    
                     self.updateDownloadingProcess(currentProcess)
+                    
                 } completionHandler: { [weak self] result in
                     guard let self = self else { return }
                     guard !hasResumed else { return }

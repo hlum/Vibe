@@ -41,25 +41,34 @@ class FileDownloader: NSObject, URLSessionDownloadDelegate {
             return
         }
         let progress = Double(totalBytesWritten) / Double(totalBytesExpectedToWrite)
-        print("FileDownloader: Progress update - \(progress * 100)% (\(totalBytesWritten)/\(totalBytesExpectedToWrite) bytes)")
-        progressHandler?(progress, totalBytesWritten, totalBytesExpectedToWrite)
+        print("FileDownloader: Progress update - \(progress * 100)%")
+        DispatchQueue.main.async {
+            self.progressHandler?(progress, totalBytesWritten, totalBytesExpectedToWrite)
+        }
     }
     
     func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
         print("FileDownloader: Download completed successfully to: \(location)")
-        completionHandler?(.success(location))
-        cleanup()
+        DispatchQueue.main.async {
+            self.completionHandler?(.success(location))
+            self.cleanup()
+        }
     }
     
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
         if let error = error {
             print("FileDownloader: Download failed with error: \(error.localizedDescription)")
-            completionHandler?(.failure(error))
+            DispatchQueue.main.async {
+                self.completionHandler?(.failure(error))
+                self.cleanup()
+            }
         } else {
             print("FileDownloader: Download completed with no error")
-            completionHandler?(.failure(URLError(.badServerResponse)))
+            DispatchQueue.main.async {
+                self.completionHandler?(.failure(URLError(.badServerResponse)))
+                self.cleanup()
+            }
         }
-        cleanup()
     }
     
     private func cleanup() {
