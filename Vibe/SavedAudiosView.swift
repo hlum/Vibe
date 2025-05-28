@@ -7,35 +7,73 @@
 
 import SwiftUI
 import SwiftData
+import AVFoundation
+
+final class SavedAudiosViewModel: ObservableObject {
+    @Published var currentPlayer: AVPlayer?
+    @Published var currentlyPlayingAudio: DownloadedAudio?
+    @Published var currentPlaybackTime: Double = 0
+    
+    
+    func playAudio(_ audio: DownloadedAudio) {
+        print("Playing \(audio.title)")
+        
+        currentPlayer?.pause()
+        
+        // Get the Documents directory URL
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let fileURL = documentsPath.appendingPathComponent("\(audio.title).m4a")
+        
+        guard FileManager.default.fileExists(atPath: fileURL.path) else {
+            print("Audio file not found at path: \(fileURL.path)")
+            return
+        }
+        
+        currentPlayer = AVPlayer(url: fileURL)
+        currentlyPlayingAudio = audio
+        
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [])
+            try AVAudioSession.sharedInstance().setActive(true)
+        } catch {
+            print("Failed to set up audio session.")
+        }
+        
+        currentPlayer?.play()
+        currentPlaybackTime = currentPlayer?.currentTime().seconds ?? 0
+        
+        NotificationCenter.default.addObserver(
+            forName: AVPlayerItem.didPlayToEndTimeNotification,
+            object: currentPlayer?.currentItem,
+            queue: .main) { [weak self] _ in
+                self?.currentlyPlayingAudio = nil
+                self?.currentPlaybackTime = 0
+            }
+        
+    }
+}
 
 struct SavedAudiosView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var savedAudios: [DownloadedAudio]
-    @StateObject private var audioPlayer = AudioPlayer()
-    @State private var currentlyPlayingId: UUID?
-    
+    @StateObject private var vm = SavedAudiosViewModel()
     var body: some View {
         List {
-            Text("\(savedAudios.count)")
             ForEach(savedAudios) { audio in
                 AudioItemRow(
                     audio: audio,
-                    isPlaying: currentlyPlayingId == audio.id,
-                    currentTime: audioPlayer.currentTime,
+                    isPlaying: vm.currentlyPlayingAudio?.id == audio.id,
+                    currentTime: $vm.currentPlaybackTime,
                     onPlayPause: {
-                        if currentlyPlayingId == audio.id {
-                            if audioPlayer.isPlaying {
-                                audioPlayer.pause()
-                            } else {
-                                audioPlayer.play(url: URL(string: audio.localURL)!)
-                            }
+                        if vm.currentlyPlayingAudio?.id == audio.id {
+                            vm.currentPlayer?.pause()
+                            vm.currentPlayer = nil
                         } else {
-                            audioPlayer.stop()
-                            currentlyPlayingId = audio.id
-                            audioPlayer.play(url: URL(string: audio.localURL)!)
+                            vm.playAudio(audio)
                         }
                     }
                 )
+                        
             }
         }
         .navigationTitle("Saved Audios")
@@ -44,9 +82,9 @@ struct SavedAudiosView: View {
 
 struct AudioItemRow: View {
     let audio: DownloadedAudio
-    let isPlaying: Bool
-    let currentTime: TimeInterval
-    let onPlayPause: () -> Void
+    var isPlaying: Bool
+    @Binding var currentTime: TimeInterval
+    var onPlayPause: () -> Void
     
     var body: some View {
         HStack {

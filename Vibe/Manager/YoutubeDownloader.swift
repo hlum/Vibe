@@ -67,7 +67,7 @@ final class YoutubeDownloader {
             
             let localURL = try saveFile(with: data, fileName: fileName)
             let duration = try await AudioManager.shared.getAudioDuration(from: localURL)
-            let downloadedAudio = DownloadedAudio(title: fileName, originalURL: urlString, localURL: localURL.absoluteString, duration: duration)
+            let downloadedAudio = DownloadedAudio(title: fileName, originalURL: urlString, duration: duration)
             try await swiftDataManager.save(downloadedAudio)
             
         } catch {
