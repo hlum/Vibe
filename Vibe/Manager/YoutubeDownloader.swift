@@ -108,7 +108,7 @@ final class YoutubeDownloader {
     }
     
     private func downloadFile(fileName: String, from url: URL) async throws -> URL {
-        var currentProcess = DownloadingProcess(fileName: fileName, progress: 0)
+        var currentProcess = DownloadingProcess(fileName: fileName, progress: 0, expectedByte: 0, finishedByte: 0)
         var hasResumed = false
         
         // Create a new downloader and store it
@@ -117,8 +117,8 @@ final class YoutubeDownloader {
         
         return try await withCheckedThrowingContinuation { continuation in
             fileDownloader.download(
-                from: url) { progress in
-                    currentProcess = DownloadingProcess(id: currentProcess.id, fileName: fileName, progress: progress)
+                from: url) { progress,finishedByte,totalByte in
+                    currentProcess = DownloadingProcess(id: currentProcess.id, fileName: fileName, progress: progress, expectedByte: Double(totalByte), finishedByte: Double(finishedByte))
                     self.updateDownloadingProcess(currentProcess)
                 } completionHandler: { [weak self] result in
                     guard let self = self else { return }

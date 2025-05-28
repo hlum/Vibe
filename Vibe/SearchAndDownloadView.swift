@@ -11,19 +11,24 @@ struct DownloadingProcess: Identifiable {
     let id: String
     let fileName: String
     var progress: Double
+    let expectedByte: Double
+    let finishedByte: Double
     
-    init(id: String = UUID().uuidString, fileName: String, progress: Double) {
+    init(id: String = UUID().uuidString, fileName: String, progress: Double, expectedByte: Double, finishedByte: Double) {
         self.id = id
         self.fileName = fileName
         self.progress = progress
+        self.expectedByte = expectedByte
+        self.finishedByte = finishedByte
     }
+
     
     
     static func dummyData() -> [DownloadingProcess] {
         return [
-            DownloadingProcess(fileName: "Lynn Lynn", progress: 0.1),
-            DownloadingProcess(fileName: "Song 2", progress:0.20),
-            DownloadingProcess(fileName: "fasdfa", progress: 0.8)
+            DownloadingProcess(fileName: "Lynn Lynn", progress: 0.1, expectedByte: 1000000, finishedByte: 10000),
+            DownloadingProcess(fileName: "Song 2", progress:0.20, expectedByte: 1000000, finishedByte: 10000),
+            DownloadingProcess(fileName: "fasdfa", progress: 0.8, expectedByte: 1000000, finishedByte: 10000)
         ]
     }
     
@@ -60,7 +65,12 @@ struct SearchAndDownloadView: View {
                             ProgressView(value: process.progress)
                             Text("\(process.progress * 100, specifier: "%.1f") %")
                         }
+//                        let text = "\(process.expectedByte/1024, specifier: "%.1f")mb"
+                        Text("\(process.finishedByte/102400 , specifier: "%.1f")mb")
+                        Text("\(process.expectedByte/102400 , specifier: "%.1f")mb")
+
                     }
+                    
                     .frame(minHeight: 55)
                     .padding()
                     
@@ -84,7 +94,7 @@ struct SearchAndDownloadView: View {
                     .padding()
                     .foregroundStyle(.white)
             }
-
+            
         }
         .overlay(alignment: .center) {
             if showFileNameInputAlert {
@@ -92,6 +102,7 @@ struct SearchAndDownloadView: View {
             }
         }
     }
+
 }
 
 

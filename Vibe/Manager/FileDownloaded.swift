@@ -8,13 +8,13 @@
 import Foundation
 
 class FileDownloader: NSObject, URLSessionDownloadDelegate {
-    private var progressHandler: ((Double) -> Void)?
+    private var progressHandler: ((Double, Int64, Int64) -> Void)?
     private var completionHandler: ((Result<URL, Error>) -> Void)?
     private var session: URLSession?
     
     func download(
         from url: URL,
-        progressHandler: @escaping (Double) -> Void,
+        progressHandler: @escaping (Double, Int64, Int64) -> Void,
         completionHandler: @escaping (Result<URL, Error>) -> Void
     ) {
         print("FileDownloader: Starting download from URL: \(url)")
@@ -22,8 +22,8 @@ class FileDownloader: NSObject, URLSessionDownloadDelegate {
         self.completionHandler = completionHandler
         
         let configuration = URLSessionConfiguration.default
-        configuration.timeoutIntervalForRequest = 30
-        configuration.timeoutIntervalForResource = 300
+        configuration.timeoutIntervalForRequest = 60
+        configuration.timeoutIntervalForResource = 3600
         configuration.waitsForConnectivity = true
         configuration.allowsCellularAccess = true
         configuration.allowsConstrainedNetworkAccess = true
@@ -42,7 +42,7 @@ class FileDownloader: NSObject, URLSessionDownloadDelegate {
         }
         let progress = Double(totalBytesWritten) / Double(totalBytesExpectedToWrite)
         print("FileDownloader: Progress update - \(progress * 100)% (\(totalBytesWritten)/\(totalBytesExpectedToWrite) bytes)")
-        progressHandler?(progress)
+        progressHandler?(progress, totalBytesWritten, totalBytesExpectedToWrite)
     }
     
     func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
