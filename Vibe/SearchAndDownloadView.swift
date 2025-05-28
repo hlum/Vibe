@@ -137,7 +137,6 @@ extension SearchAndDownloadView {
                 HStack {
                     TextField(NSLocalizedString("Enter file name", comment: ""), text: $fileName)
                     .font(.title2.bold())
-                    .keyboardType(.numberPad)
                     .textFieldStyle(.plain)
                 }
                 .padding()

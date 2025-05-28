@@ -41,10 +41,8 @@ class FileDownloader: NSObject, URLSessionDownloadDelegate {
             return
         }
         let progress = Double(totalBytesWritten) / Double(totalBytesExpectedToWrite)
-        print("FileDownloader: Progress update - \(progress * 100)%")
-        DispatchQueue.main.async {
-            self.progressHandler?(progress, totalBytesWritten, totalBytesExpectedToWrite)
-        }
+        self.progressHandler?(progress, totalBytesWritten, totalBytesExpectedToWrite)
+
     }
     
     func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {

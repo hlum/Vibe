@@ -25,22 +25,22 @@ final class MainTabViewModel: ObservableObject {
     
     func addListenerToDownloadProcesses() {
         youtubeDownloader?.currentDownloadingProcesses = { [weak self] processes in
-            print("Updated")
             guard let self else {
-                print("No self")
                 return
             }
             DispatchQueue.main.async {
-                print("Downloading process updated with \(processes.count) processes")
                 self.downloadingProcesses = processes
             }
         }
     }
     
-    func downloadAndSave(fileName: String) {
-        Task {
+    func downloadAndSave(fileName: String) async {
+        do {
             try await youtubeDownloader?.downloadAudioAndSave(from: youtubeURL, fileName: fileName)
+        } catch {
+            print("Error downloading: \(error.localizedDescription)")
         }
+        
     }
 }
 
@@ -51,7 +51,9 @@ struct MainTabView: View {
     var body: some View {
         TabView(selection: $selectedTabIndex) {
             SearchAndDownloadView(youtubeURL: $vm.youtubeURL, downloadingProcesses: $vm.downloadingProcesses, download: {fileName in
-                vm.downloadAndSave(fileName: fileName)
+                Task {
+                    await vm.downloadAndSave(fileName: fileName)
+                }
             })
                 .tabItem {
                     Image(systemName: "magnifyingglass")
@@ -59,10 +61,10 @@ struct MainTabView: View {
                 }
                 .tag(0)
             
-            Text("Hello")
+            SavedAudiosView()
                 .tabItem {
                     Image(systemName: "music.note.list")
-                    Text("Search")
+                    Text("Saved")
                 }
                 .tag(1)
         }
