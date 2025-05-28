@@ -1,0 +1,15 @@
+{
+  "originHash" : "a36ecc95b5fd4bd6a0494aead3150f214168449e37e08583293e0288ba2f19af",
+  "pins" : [
+    {
+      "identity" : "youtubekit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/alexeichhorn/YouTubeKit.git",
+      "state" : {
+        "revision" : "e1895c72f0edff9acd6b41977d2ad9c6245e8306",
+        "version" : "0.2.7"
+      }
+    }
+  ],
+  "version" : 3
+}
