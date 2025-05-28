@@ -37,25 +37,37 @@ enum YoutubeDownloaderError: LocalizedError {
 
 
 final class YoutubeDownloader {
-    let progressHandler: ((Double) -> Void)? = nil
+    var currentDownloadingProcesses: (([DownloadingProcess]) -> Void)? = nil
     private let fileDownloader: FileDownloader = FileDownloader()
+    private var currentProcesses: [DownloadingProcess] = []
     
     
     func downloadAudioAndSave(from urlString: String, fileName: String) async throws -> URL {
-        guard let url = URL(string: urlString) else {
+        guard !urlString.isEmpty else {
             throw YoutubeDownloaderError.invalidURL
         }
-        progressHandler?(0)
-        guard let downloadableURL = try await getDownloadableURL(from: url) else {
-            throw YoutubeDownloaderError.downloadableURLNotFound
+        
+        guard let url = URL(string: urlString),
+              url.host?.contains("youtube.com") == true || url.host?.contains("youtu.be") == true else {
+            throw YoutubeDownloaderError.invalidURL
         }
         
-        let downloadedURL = try await downloadFile(from: downloadableURL)
-        let data = try Data(contentsOf: downloadedURL)
-
-        return try saveFile(with: data, fileName: fileName)
+        do {
+            guard let downloadableURL = try await getDownloadableURL(from: url) else {
+                throw YoutubeDownloaderError.downloadableURLNotFound
+            }
+            
+            let downloadedURL = try await downloadFile(fileName: fileName, from: downloadableURL)
+            let data = try Data(contentsOf: downloadedURL)
+            
+            return try saveFile(with: data, fileName: fileName)
+        } catch let error as YoutubeDownloaderError {
+            throw error
+        } catch {
+            throw YoutubeDownloaderError.networkError(error)
+        }
     }
-    
+        
     private func getDownloadableURL(from url: URL) async throws -> URL? {
         
       
@@ -71,16 +83,25 @@ final class YoutubeDownloader {
     }
     
     
-    private func downloadFile(from url: URL) async throws -> URL {
+    private func downloadFile(fileName: String, from url: URL) async throws -> URL {
+        var currentProcess = DownloadingProcess(fileName: fileName, progress: 0)
+        var hasResumed = false
+
         return try await withCheckedThrowingContinuation { continuation in
             fileDownloader.download(
                 from: url) { progress in
-                    self.progressHandler?(progress)
+                    currentProcess = DownloadingProcess(id: currentProcess.id, fileName: fileName, progress: progress)
+                    self.updateDownloadingProcess(currentProcess)
                 } completionHandler: { result in
+                    guard !hasResumed else { return }
+                    hasResumed = true
+                    
                     switch result {
                     case .success(let fileURL):
+                        self.removeDownloadingProcess(currentProcess)
                         continuation.resume(returning: fileURL)
                     case .failure(let error):
+                        self.removeDownloadingProcess(currentProcess)
                         continuation.resume(throwing: error)
                     }
                 }
@@ -98,5 +119,22 @@ final class YoutubeDownloader {
             throw YoutubeDownloaderError.networkError(error)
         }
     }
+    
+    
+    
+    private func removeDownloadingProcess(_ process: DownloadingProcess) {
+        currentProcesses.removeAll { $0.id == process.id }
+        currentDownloadingProcesses?(currentProcesses)
+    }
+    
+    private func updateDownloadingProcess(_ process: DownloadingProcess) {
+        if let currentDownloadingProcessesIndex = currentProcesses.firstIndex(where: { $0.id == process.id }) {
+            currentProcesses[currentDownloadingProcessesIndex] = process
+        } else {
+            currentProcesses.append(process)
+        }
+        currentDownloadingProcesses?(currentProcesses)
+    }
+
     
 }
