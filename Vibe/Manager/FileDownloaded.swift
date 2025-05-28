@@ -17,6 +17,7 @@ class FileDownloader: NSObject, URLSessionDownloadDelegate {
         progressHandler: @escaping (Double) -> Void,
         completionHandler: @escaping (Result<URL, Error>) -> Void
     ) {
+        print("FileDownloader: Starting download from URL: \(url)")
         self.progressHandler = progressHandler
         self.completionHandler = completionHandler
         
@@ -30,30 +31,39 @@ class FileDownloader: NSObject, URLSessionDownloadDelegate {
         
         session = URLSession(configuration: configuration, delegate: self, delegateQueue: .main)
         let task = session?.downloadTask(with: url)
+        print("FileDownloader: Created download task")
         task?.resume()
     }
     
     func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
-        guard totalBytesExpectedToWrite > 0 else { return }
+        guard totalBytesExpectedToWrite > 0 else {
+            print("FileDownloader: Invalid total bytes expected")
+            return
+        }
         let progress = Double(totalBytesWritten) / Double(totalBytesExpectedToWrite)
+        print("FileDownloader: Progress update - \(progress * 100)% (\(totalBytesWritten)/\(totalBytesExpectedToWrite) bytes)")
         progressHandler?(progress)
     }
     
     func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
+        print("FileDownloader: Download completed successfully to: \(location)")
         completionHandler?(.success(location))
         cleanup()
     }
     
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
         if let error = error {
+            print("FileDownloader: Download failed with error: \(error.localizedDescription)")
             completionHandler?(.failure(error))
         } else {
+            print("FileDownloader: Download completed with no error")
             completionHandler?(.failure(URLError(.badServerResponse)))
         }
         cleanup()
     }
     
     private func cleanup() {
+        print("FileDownloader: Cleaning up resources")
         session?.invalidateAndCancel()
         session = nil
         progressHandler = nil
@@ -61,6 +71,7 @@ class FileDownloader: NSObject, URLSessionDownloadDelegate {
     }
     
     deinit {
+        print("FileDownloader: Deinitializing")
         cleanup()
     }
 }
