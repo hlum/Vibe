@@ -14,11 +14,26 @@ final class SavedAudiosViewModel: ObservableObject {
     @Published var currentlyPlayingAudio: DownloadedAudio?
     @Published var currentPlaybackTime: Double = 0
     
+    private var swiftDataManager: SwiftDataManager?
+    private var timeObserver: Any?
+    
+    deinit {
+        if let timeObserver = timeObserver {
+            currentPlayer?.removeTimeObserver(timeObserver)
+        }
+    }
+    
+    func setSwiftDataManager(_ swiftDataManager: SwiftDataManager) {
+        self.swiftDataManager = swiftDataManager
+    }
     
     func playAudio(_ audio: DownloadedAudio) {
         print("Playing \(audio.title)")
         
         currentPlayer?.pause()
+        if let timeObserver = timeObserver {
+            currentPlayer?.removeTimeObserver(timeObserver)
+        }
         
         // Get the Documents directory URL
         let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -39,8 +54,13 @@ final class SavedAudiosViewModel: ObservableObject {
             print("Failed to set up audio session.")
         }
         
+        // Add time observer
+        let interval = CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+        timeObserver = currentPlayer?.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
+            self?.currentPlaybackTime = time.seconds
+        }
+        
         currentPlayer?.play()
-        currentPlaybackTime = currentPlayer?.currentTime().seconds ?? 0
         
         NotificationCenter.default.addObserver(
             forName: AVPlayerItem.didPlayToEndTimeNotification,
@@ -48,8 +68,28 @@ final class SavedAudiosViewModel: ObservableObject {
             queue: .main) { [weak self] _ in
                 self?.currentlyPlayingAudio = nil
                 self?.currentPlaybackTime = 0
+                if let timeObserver = self?.timeObserver {
+                    self?.currentPlayer?.removeTimeObserver(timeObserver)
+                }
             }
-        
+    }
+    
+    
+    func delete(_ audio: DownloadedAudio) async {
+        do {
+            if self.currentlyPlayingAudio?.id == audio.id {
+                self.currentPlayer?.pause()
+                self.currentPlayer = nil
+                currentPlaybackTime = 0
+                if let timeObserver = self.timeObserver {
+                    self.currentPlayer?.removeTimeObserver(timeObserver)
+                }
+
+            }
+            try await swiftDataManager?.deleteDownloadedAudio(audio)
+        } catch {
+            print("Error deleting audio: \(error.localizedDescription)")
+        }
     }
 }
 
@@ -57,6 +97,7 @@ struct SavedAudiosView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var savedAudios: [DownloadedAudio]
     @StateObject private var vm = SavedAudiosViewModel()
+    
     var body: some View {
         List {
             ForEach(savedAudios) { audio in
@@ -68,15 +109,30 @@ struct SavedAudiosView: View {
                         if vm.currentlyPlayingAudio?.id == audio.id {
                             vm.currentPlayer?.pause()
                             vm.currentPlayer = nil
+                            vm.currentlyPlayingAudio = nil
+                            vm.currentPlaybackTime = 0
                         } else {
                             vm.playAudio(audio)
                         }
                     }
                 )
-                        
+                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                    Button {
+                        Task {
+                            await vm.delete(audio)
+                        }
+                    } label: {
+                        Text("Delete")
+                            .foregroundStyle(.red)
+                    }
+
+                }
             }
         }
         .navigationTitle("Saved Audios")
+        .onAppear {
+            vm.setSwiftDataManager(SwiftDataManager(context: modelContext))
+        }
     }
 }
 
@@ -87,21 +143,41 @@ struct AudioItemRow: View {
     var onPlayPause: () -> Void
     
     var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(audio.title)
-                    .font(.headline)
-                Text(formatDuration(currentTime))
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(audio.title)
+                        .font(.headline)
+                    
+                    Text("Downloaded: \(formatDate(audio.downloadDate))")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+                
+                Button(action: onPlayPause) {
+                    Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                        .font(.title)
+                        .foregroundColor(.blue)
+                }
             }
             
-            Spacer()
-            
-            Button(action: onPlayPause) {
-                Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                    .font(.title)
-                    .foregroundColor(.blue)
+            if isPlaying {
+                ProgressView(value: currentTime, total: audio.duration)
+                    .tint(.blue)
+                
+                HStack {
+                    Text(formatDuration(currentTime))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    Spacer()
+                    
+                    Text(formatDuration(audio.duration))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
             }
         }
         .padding(.vertical, 8)
@@ -111,6 +187,13 @@ struct AudioItemRow: View {
         let minutes = Int(duration) / 60
         let seconds = Int(duration) % 60
         return String(format: "%d:%02d", minutes, seconds)
+    }
+    
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
     }
 }
 

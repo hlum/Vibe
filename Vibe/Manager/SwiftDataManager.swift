@@ -26,4 +26,10 @@ class SwiftDataManager {
         let descriptor = FetchDescriptor<DownloadedAudio>()
         return try context.fetch(descriptor)
     }
+    
+    
+    func deleteDownloadedAudio(_ downloadedAudio: DownloadedAudio) throws {
+        context.delete(downloadedAudio)
+        try context.save()
+    }
 }
