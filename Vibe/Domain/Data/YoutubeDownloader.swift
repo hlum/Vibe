@@ -8,37 +8,17 @@
 import Foundation
 import YouTubeKit
 
-
-enum YoutubeDownloaderError: LocalizedError {
-    case invalidURL
-    case invalidResponse
-    case streamNotFound
-    case downloadableURLNotFound
-    case decodingError(Error)
-    case networkError(Error)
-    
-    var errorDescription: String? {
-        switch self {
-        case .invalidURL:
-            return NSLocalizedString("Invalid URL", comment: "")
-        case .downloadableURLNotFound:
-            return NSLocalizedString("Downloadable URL not found.", comment: "")
-        case .streamNotFound:
-            return NSLocalizedString("Stream not found.", comment: "")
-        case .invalidResponse:
-            return NSLocalizedString("Invalid response from server", comment: "")
-        case .decodingError(let error):
-            return String(format: NSLocalizedString("Failed to decode response: %@", comment: ""), error.localizedDescription)
-        case .networkError(let error):
-            return String(format: NSLocalizedString("Network error: %@", comment: ""), error.localizedDescription)
-        }
-    }
+protocol YoutubeDownloaderProtocol {
+    func downloadAudioAndSave(
+        from urlString: String,
+        fileName: String,
+        currentDownloadingProcesses: @escaping ([DownloadingProcess]) -> Void
+    ) async throws
 }
 
-
-final class YoutubeDownloader {
+final class YoutubeDownloader: YoutubeDownloaderProtocol {
     private let swiftDataManager: SwiftDataManager
-    var currentDownloadingProcesses: (([DownloadingProcess]) -> Void)?
+    private var currentDownloadingProcesses: (([DownloadingProcess]) -> Void)?
     private var currentProcesses: [DownloadingProcess] = []
     private var activeDownloads: [String: FileDownloader] = [:]
     private let maxRetries = 3
@@ -47,7 +27,12 @@ final class YoutubeDownloader {
         self.swiftDataManager = swiftDataManager
     }
     
-    func downloadAudioAndSave(from urlString: String, fileName: String) async throws {
+    func downloadAudioAndSave(
+        from urlString: String,
+        fileName: String,
+        currentDownloadingProcesses: @escaping ([DownloadingProcess]) -> Void
+    ) async throws {
+        self.currentDownloadingProcesses = currentDownloadingProcesses
         guard !urlString.isEmpty else {
             throw YoutubeDownloaderError.invalidURL
         }

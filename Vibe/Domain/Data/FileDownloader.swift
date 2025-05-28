@@ -7,7 +7,7 @@
 
 import Foundation
 
-class FileDownloader: NSObject, URLSessionDownloadDelegate {
+class FileDownloader: NSObject, URLSessionDownloadDelegate, Downloader {
     private var progressHandler: ((Double, Int64, Int64) -> Void)?
     private var completionHandler: ((Result<URL, Error>) -> Void)?
     private var session: URLSession?
@@ -47,10 +47,8 @@ class FileDownloader: NSObject, URLSessionDownloadDelegate {
     
     func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
         print("FileDownloader: Download completed successfully to: \(location)")
-        DispatchQueue.main.async {
             self.completionHandler?(.success(location))
             self.cleanup()
-        }
     }
     
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
@@ -62,10 +60,8 @@ class FileDownloader: NSObject, URLSessionDownloadDelegate {
             }
         } else {
             print("FileDownloader: Download completed with no error")
-            DispatchQueue.main.async {
                 self.completionHandler?(.failure(URLError(.badServerResponse)))
                 self.cleanup()
-            }
         }
     }
     
