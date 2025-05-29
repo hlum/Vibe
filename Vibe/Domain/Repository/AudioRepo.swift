@@ -8,7 +8,7 @@
 import Foundation
 
 @MainActor
-protocol AudioRepository {
+protocol AudioDataRepository {
     func save(_ downloadedAudio: DownloadedAudio) throws
     func fetchAllDownloadedAudio() throws -> [DownloadedAudio]
     func deleteDownloadedAudio(_ downloadedAudio: DownloadedAudio) throws

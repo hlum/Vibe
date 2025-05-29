@@ -13,11 +13,12 @@ protocol ContainerProtocol {
     var modelContext: ModelContext { get }
     var audioManagerRepo: AudioManagerRepository { get }
     var downloader: Downloader { get }
-    var audioRepo: AudioRepository { get }
+    var audioRepo: AudioDataRepository { get }
     var downloadableLinkConverter: DownloadableLinkConverter { get }
     
     var savedAudioUseCase: SavedAudioUseCase { get }
     var youtubeDownloaderUseCase: YoutubeDownloaderUseCase { get }
+    var audioPlayerUseCase: AudioPlayerUseCase { get }
 }
 
 @MainActor
@@ -45,7 +46,7 @@ final class DepedencyContainer: ContainerProtocol {
         YoutubeDownloadableLinkConverter()
     }
     
-    var audioRepo: AudioRepository {
+    var audioRepo: AudioDataRepository {
         SwiftDataAudioRepoImpl(context: modelContext)
     }
     
@@ -55,6 +56,10 @@ final class DepedencyContainer: ContainerProtocol {
     
     var youtubeDownloaderUseCase: YoutubeDownloaderUseCase {
         YoutubeDownloaderUseCaseImpl(downloadableLinkConverter: downloadableLinkConverter, downloader: downloader)
+    }
+    
+    var audioPlayerUseCase: AudioPlayerUseCase {
+        AudioPlayerUseCaseImpl(audioManager: audioManagerRepo, savedAudioUseCase: savedAudioUseCase)
     }
     
 }
