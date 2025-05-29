@@ -9,45 +9,19 @@ import Foundation
 import YouTubeKit
 
 
-enum YoutubeDownloaderError: LocalizedError {
-    case invalidURL
-    case invalidResponse
-    case streamNotFound
-    case downloadableURLNotFound
-    case decodingError(Error)
-    case networkError(Error)
-    
-    var errorDescription: String? {
-        switch self {
-        case .invalidURL:
-            return NSLocalizedString("Invalid URL", comment: "")
-        case .downloadableURLNotFound:
-            return NSLocalizedString("Downloadable URL not found.", comment: "")
-        case .streamNotFound:
-            return NSLocalizedString("Stream not found.", comment: "")
-        case .invalidResponse:
-            return NSLocalizedString("Invalid response from server", comment: "")
-        case .decodingError(let error):
-            return String(format: NSLocalizedString("Failed to decode response: %@", comment: ""), error.localizedDescription)
-        case .networkError(let error):
-            return String(format: NSLocalizedString("Network error: %@", comment: ""), error.localizedDescription)
-        }
-    }
-}
 
-
-final class YoutubeDownloader {
-    private let swiftDataManager: SwiftDataManager
-    var currentDownloadingProcesses: (([DownloadingProcess]) -> Void)?
+final class DownloaderRepo {
+    private var currentDownloadingProcesses: (([DownloadingProcess]) -> Void)?
     private var currentProcesses: [DownloadingProcess] = []
     private var activeDownloads: [String: FileDownloader] = [:]
     private let maxRetries = 3
-    
-    init(swiftDataManager: SwiftDataManager) {
-        self.swiftDataManager = swiftDataManager
-    }
-    
-    func downloadAudioAndSave(from urlString: String, fileName: String) async throws {
+        
+    func downloadAudioAndSave(
+        from urlString: String,
+        fileName: String,
+        currentDownloadingProcesses: @escaping ([DownloadingProcess]) -> Void
+    ) async throws -> URL{
+        self.currentDownloadingProcesses = currentDownloadingProcesses
         guard !urlString.isEmpty else {
             throw YoutubeDownloaderError.invalidURL
         }
@@ -58,17 +32,14 @@ final class YoutubeDownloader {
         }
         
         do {
-            guard let downloadableURL = try await getDownloadableURL(from: url) else {
-                throw YoutubeDownloaderError.downloadableURLNotFound
-            }
+            let downloadableURL = try await getDownloadableURL(from: url)
             
             let downloadedURL = try await downloadFileWithRetry(fileName: fileName, from: downloadableURL)
             let data = try Data(contentsOf: downloadedURL)
             
             let localURL = try saveFile(with: data, fileName: fileName)
-            let duration = try await AudioManager.shared.getAudioDuration(from: localURL)
-            let downloadedAudio = DownloadedAudio(title: fileName, originalURL: urlString, duration: duration)
-            try await swiftDataManager.save(downloadedAudio)
+            
+            return localURL
             
         } catch {
             print("Error downloading file: \(error.localizedDescription)")
@@ -76,20 +47,17 @@ final class YoutubeDownloader {
         }
     }
         
-    private func getDownloadableURL(from url: URL) async throws -> URL? {
-        do {
-            let video = YouTube(url: url)
-            let streams = try await video.streams
-            let audioOnlyStreams = streams.filterAudioOnly()
-            
-            guard let stream = audioOnlyStreams.filter ({ $0.isNativelyPlayable }).highestAudioBitrateStream() else {
-                throw YoutubeDownloaderError.streamNotFound
-            }
-            
-            return stream.url
-        } catch {
-            throw YoutubeDownloaderError.decodingError(error)
+    func getDownloadableURL(from url: URL) async throws -> URL {
+        
+        let video = YouTube(url: url)
+        let streams = try await video.streams
+        let audioOnlyStreams = streams.filterAudioOnly()
+        
+        guard let stream = audioOnlyStreams.filter ({ $0.isNativelyPlayable }).highestAudioBitrateStream() else {
+            throw YoutubeDownloaderError.streamNotFound
         }
+        
+        return stream.url
     }
     
     

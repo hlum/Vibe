@@ -11,23 +11,30 @@ import SwiftData
 @main
 struct VibeApp: App {
     
-    var sharedModelContainer: ModelContainer = {
+    private let container: ContainerProtocol
+    
+    init() {
         let schema = Schema([
             DownloadedAudio.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-
+        
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            let container = try ModelContainer(for: schema, configurations: [modelConfiguration])
+            self.container = DepedencyContainer(modelContainer: container)
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }
-    }()
+    }
+
     
     var body: some Scene {
         WindowGroup {
-            MainTabView()
+            let mainTabViewModel = MainTabViewModel(youtubeDownloaderUseCase: container.youtubeDownloaderUseCase, savedAudioUseCase: container.savedAudioUseCase)
+            
+            MainTabView(vm: mainTabViewModel)
+                .injectDependencies(container)
         }
-        .modelContainer(sharedModelContainer)
+        .modelContainer(container.modelContext.container)
     }
 }
