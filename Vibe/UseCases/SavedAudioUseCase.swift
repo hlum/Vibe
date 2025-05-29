@@ -15,9 +15,9 @@ protocol SavedAudioUseCase {
 
 
 class SwiftDataSavedAudioUseCaseImpl: SavedAudioUseCase {
-    let repository: AudioRepository
+    let repository: AudioDataRepository
     
-    init(audioRepo: AudioRepository) {
+    init(audioRepo: AudioDataRepository) {
         self.repository = audioRepo
     }
     
