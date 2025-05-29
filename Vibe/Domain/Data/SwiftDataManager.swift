@@ -9,7 +9,7 @@ import Foundation
 import SwiftData
 
 @MainActor
-class SwiftDataManager : SwiftDataAudioRepository {
+class SwiftDataAudioRepoImpl : AudioRepository {
     let context: ModelContext
     
     init(context: ModelContext) {

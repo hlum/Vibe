@@ -8,6 +8,11 @@
 import Foundation
 
 class FileDownloader: NSObject, URLSessionDownloadDelegate, Downloader {
+    
+    func createNewInstance() -> Downloader {
+        return FileDownloader()
+    }
+    
     private var progressHandler: ((Double, Int64, Int64) -> Void)?
     private var completionHandler: ((Result<URL, Error>) -> Void)?
     private var session: URLSession?
@@ -60,10 +65,10 @@ class FileDownloader: NSObject, URLSessionDownloadDelegate, Downloader {
             }
         } else {
             print("FileDownloader: Download completed with no error")
-                self.completionHandler?(.failure(URLError(.badServerResponse)))
                 self.cleanup()
         }
     }
+    
     
     private func cleanup() {
         print("FileDownloader: Cleaning up resources")

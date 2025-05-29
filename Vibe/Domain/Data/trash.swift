@@ -8,30 +8,19 @@
 import Foundation
 import YouTubeKit
 
-protocol YoutubeDownloaderProtocol {
-    func downloadAudioAndSave(
-        from urlString: String,
-        fileName: String,
-        currentDownloadingProcesses: @escaping ([DownloadingProcess]) -> Void
-    ) async throws
-}
 
-final class YoutubeDownloader: YoutubeDownloaderProtocol {
-    private let swiftDataManager: SwiftDataManager
+
+final class DownloaderRepo {
     private var currentDownloadingProcesses: (([DownloadingProcess]) -> Void)?
     private var currentProcesses: [DownloadingProcess] = []
     private var activeDownloads: [String: FileDownloader] = [:]
     private let maxRetries = 3
-    
-    init(swiftDataManager: SwiftDataManager) {
-        self.swiftDataManager = swiftDataManager
-    }
-    
+        
     func downloadAudioAndSave(
         from urlString: String,
         fileName: String,
         currentDownloadingProcesses: @escaping ([DownloadingProcess]) -> Void
-    ) async throws {
+    ) async throws -> URL{
         self.currentDownloadingProcesses = currentDownloadingProcesses
         guard !urlString.isEmpty else {
             throw YoutubeDownloaderError.invalidURL
@@ -43,17 +32,14 @@ final class YoutubeDownloader: YoutubeDownloaderProtocol {
         }
         
         do {
-            guard let downloadableURL = try await getDownloadableURL(from: url) else {
-                throw YoutubeDownloaderError.downloadableURLNotFound
-            }
+            let downloadableURL = try await getDownloadableURL(from: url)
             
             let downloadedURL = try await downloadFileWithRetry(fileName: fileName, from: downloadableURL)
             let data = try Data(contentsOf: downloadedURL)
             
             let localURL = try saveFile(with: data, fileName: fileName)
-            let duration = try await AudioManager.shared.getAudioDuration(from: localURL)
-            let downloadedAudio = DownloadedAudio(title: fileName, originalURL: urlString, duration: duration)
-            try await swiftDataManager.save(downloadedAudio)
+            
+            return localURL
             
         } catch {
             print("Error downloading file: \(error.localizedDescription)")
@@ -61,20 +47,17 @@ final class YoutubeDownloader: YoutubeDownloaderProtocol {
         }
     }
         
-    private func getDownloadableURL(from url: URL) async throws -> URL? {
-        do {
-            let video = YouTube(url: url)
-            let streams = try await video.streams
-            let audioOnlyStreams = streams.filterAudioOnly()
-            
-            guard let stream = audioOnlyStreams.filter ({ $0.isNativelyPlayable }).highestAudioBitrateStream() else {
-                throw YoutubeDownloaderError.streamNotFound
-            }
-            
-            return stream.url
-        } catch {
-            throw YoutubeDownloaderError.decodingError(error)
+    func getDownloadableURL(from url: URL) async throws -> URL {
+        
+        let video = YouTube(url: url)
+        let streams = try await video.streams
+        let audioOnlyStreams = streams.filterAudioOnly()
+        
+        guard let stream = audioOnlyStreams.filter ({ $0.isNativelyPlayable }).highestAudioBitrateStream() else {
+            throw YoutubeDownloaderError.streamNotFound
         }
+        
+        return stream.url
     }
     
     
