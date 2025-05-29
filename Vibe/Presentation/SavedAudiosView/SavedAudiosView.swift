@@ -30,6 +30,9 @@ struct SavedAudiosView: View {
                         } else {
                             vm.playAudio(audio)
                         }
+                    },
+                    onSeek: { time in
+                        vm.seekToTime(time)
                     }
                 )
                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
@@ -53,10 +56,14 @@ struct SavedAudiosView: View {
 }
 
 struct AudioItemRow: View {
+    @State private var isEditing = false
+    @State private var sliderValue: Double = 0
+    
     let audio: DownloadedAudio
     var isPlaying: Bool
     @Binding var currentTime: TimeInterval
     var onPlayPause: () -> Void
+    var onSeek: (TimeInterval) -> Void
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -80,8 +87,20 @@ struct AudioItemRow: View {
             }
             
             if isPlaying {
-                ProgressView(value: currentTime, total: audio.duration)
-                    .tint(.blue)
+
+                Slider(value: Binding(get: {
+                    sliderValue
+                }, set: { newValue in
+                        sliderValue = newValue
+                        currentTime = newValue
+                }), in: 0...audio.duration) { editing in
+                    isEditing = editing
+                    
+                    
+                    if !editing {
+                        onSeek(sliderValue)
+                    }
+                }
                 
                 HStack {
                     Text(formatDuration(currentTime))
@@ -97,6 +116,11 @@ struct AudioItemRow: View {
             }
         }
         .padding(.vertical, 8)
+        .onChange(of: currentTime) { _, newValue in
+            if !isEditing {
+                    sliderValue = newValue
+            }
+        }
     }
     
     private func formatDuration(_ duration: TimeInterval) -> String {

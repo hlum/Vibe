@@ -24,6 +24,12 @@ final class SavedAudiosViewModel: ObservableObject {
         }
     }
     
+    func seekToTime(_ seconds: Double) {
+        print("Seeking")
+        let targetTime = CMTime(seconds: seconds, preferredTimescale: 600)
+        currentPlayer?.seek(to: targetTime)
+    }
+
     func setSwiftDataManager(_ swiftDataManager: SwiftDataManager) {
         self.swiftDataManager = swiftDataManager
     }
