@@ -9,90 +9,83 @@
 import SwiftUI
 import SwiftData
 import AVFoundation
+import Combine
 
+@MainActor
 final class SavedAudiosViewModel: ObservableObject {
-    @Published var currentPlayer: AVPlayer?
-    @Published var currentlyPlayingAudio: DownloadedAudio?
     @Published var currentPlaybackTime: Double = 0
-    
-    private var timeObserver: Any?
+    @Published var isPlaying: Bool = false
+    @Published var currentAudio: DownloadedAudio?
+    @Published var isLooping: Bool = false
     
     private let savedAudioUseCase: SavedAudioUseCase
+    private let audioPlayerUseCase: AudioPlayerUseCase
+    private var cancellables = Set<AnyCancellable>()
     
-    init(savedAudioUseCase: SavedAudioUseCase) {
+    init(savedAudioUseCase: SavedAudioUseCase, audioPlayerUseCase: AudioPlayerUseCase) {
         self.savedAudioUseCase = savedAudioUseCase
+        self.audioPlayerUseCase = audioPlayerUseCase
+        
+        setupBindings()
     }
     
-    deinit {
-        if let timeObserver = timeObserver {
-            currentPlayer?.removeTimeObserver(timeObserver)
-        }
+    private func setupBindings() {
+        // Bind to audio player use case publishers
+        audioPlayerUseCase.currentPlaybackTimePublisher
+            .assign(to: &$currentPlaybackTime)
+        
+        audioPlayerUseCase.isPlayingPublisher
+            .assign(to: &$isPlaying)
+        
+        audioPlayerUseCase.currentAudioPublisher
+            .assign(to: &$currentAudio)
+            
+        audioPlayerUseCase.isLoopingPublisher
+            .assign(to: &$isLooping)
     }
     
     func seekToTime(_ seconds: Double) {
-        print("Seeking")
-        let targetTime = CMTime(seconds: seconds, preferredTimescale: 600)
-        currentPlayer?.seek(to: targetTime)
+        audioPlayerUseCase.seek(to: seconds)
     }
-
     
     func playAudio(_ audio: DownloadedAudio) {
-        print("Playing \(audio.title)")
-        
-        currentPlayer?.pause()
-        if let timeObserver = timeObserver {
-            currentPlayer?.removeTimeObserver(timeObserver)
-        }
-        
-        // Get the Documents directory URL
-        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        let fileURL = documentsPath.appendingPathComponent("\(audio.title).m4a")
-        
-        guard FileManager.default.fileExists(atPath: fileURL.path) else {
-            print("Audio file not found at path: \(fileURL.path)")
-            return
-        }
-        
-        currentPlayer = AVPlayer(url: fileURL)
-        currentlyPlayingAudio = audio
-        
-        do {
-            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [])
-            try AVAudioSession.sharedInstance().setActive(true)
-        } catch {
-            print("Failed to set up audio session.")
-        }
-        
-        // Add time observer
-        let interval = CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
-        timeObserver = currentPlayer?.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
-            self?.currentPlaybackTime = time.seconds
-        }
-        
-        currentPlayer?.play()
-        
-        NotificationCenter.default.addObserver(
-            forName: AVPlayerItem.didPlayToEndTimeNotification,
-            object: currentPlayer?.currentItem,
-            queue: .main) { [weak self] _ in
-                self?.currentlyPlayingAudio = nil
-                self?.currentPlaybackTime = 0
-                if let timeObserver = self?.timeObserver {
-                    self?.currentPlayer?.removeTimeObserver(timeObserver)
-                }
+        if currentAudio?.id == audio.id {
+            if isPlaying {
+                pauseAudio()
+            } else {
+                resumeAudio()
             }
+        } else {
+            audioPlayerUseCase.play(audio)
+        }
     }
     
+    func pauseAudio() {
+        print("ViewModel: Pausing audio")
+        audioPlayerUseCase.pause()
+    }
+    
+    func resumeAudio() {
+        print("ViewModel: Resuming audio")
+        audioPlayerUseCase.resume()
+    }
+    
+    func playNext() {
+        audioPlayerUseCase.playNext()
+    }
+    
+    func playPrevious() {
+        audioPlayerUseCase.playPrevious()
+    }
+    
+    func toggleLoop() {
+        audioPlayerUseCase.toggleLoop()
+    }
     
     func delete(_ audio: DownloadedAudio) async {
         do {
-            if self.currentlyPlayingAudio?.id == audio.id {
-                self.currentPlayer?.pause()
-                self.currentPlayer = nil
-                currentPlaybackTime = 0
-                if let timeObserver = self.timeObserver {
-                    self.currentPlayer?.removeTimeObserver(timeObserver)
-                }
+            if currentAudio?.id == audio.id {
+                audioPlayerUseCase.stop()
             }
             try await savedAudioUseCase.deleteAudio(audio)
         } catch {

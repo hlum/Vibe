@@ -13,6 +13,12 @@ protocol AudioManagerRepository {
     var isPlaying: Bool { get }
     var currentAudio: DownloadedAudio? { get }
     
+    var currentPlaybackTimePublisher: AnyPublisher<Double, Never> { get }
+    var isPlayingPublisher: AnyPublisher<Bool, Never> { get }
+    var currentAudioPublisher: AnyPublisher<DownloadedAudio?, Never> { get }
+    var playbackFinished: PassthroughSubject<Void, Never> { get }
+    
+    
     func play(_ audio: DownloadedAudio)
     func pause()
     func resume()

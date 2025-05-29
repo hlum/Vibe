@@ -14,6 +14,12 @@ protocol AudioPlayerUseCase {
     var isPlaying: Bool { get }
     var currentAudio: DownloadedAudio? { get }
     var playlist: [DownloadedAudio] { get }
+    var isLooping: Bool { get }
+    
+    var currentPlaybackTimePublisher: AnyPublisher<Double, Never> { get }
+    var isPlayingPublisher: AnyPublisher<Bool, Never> { get }
+    var currentAudioPublisher: AnyPublisher<DownloadedAudio?, Never> { get }
+    var isLoopingPublisher: AnyPublisher<Bool, Never> { get }
     
     func play(_ audio: DownloadedAudio)
     func pause()
@@ -31,8 +37,9 @@ final class AudioPlayerUseCaseImpl: AudioPlayerUseCase {
     private let savedAudioUseCase: SavedAudioUseCase
     
     @Published private(set) var playlist: [DownloadedAudio] = []
+    @Published private(set) var isLooping: Bool = false
     private var currentIndex: Int = -1
-    private var isLooping: Bool = false
+    private var cancellables = Set<AnyCancellable>()
     
     var currentPlaybackTime: Double {
         audioManager.currentPlaybackTime
@@ -46,10 +53,27 @@ final class AudioPlayerUseCaseImpl: AudioPlayerUseCase {
         audioManager.currentAudio
     }
     
+    var currentPlaybackTimePublisher: AnyPublisher<Double, Never> {
+        audioManager.currentPlaybackTimePublisher
+    }
+    
+    var isPlayingPublisher: AnyPublisher<Bool, Never> {
+        audioManager.isPlayingPublisher
+    }
+    
+    var currentAudioPublisher: AnyPublisher<DownloadedAudio?, Never> {
+        audioManager.currentAudioPublisher
+    }
+    
+    var isLoopingPublisher: AnyPublisher<Bool, Never> {
+        $isLooping.eraseToAnyPublisher()
+    }
+    
     init(audioManager: AudioManagerRepository, savedAudioUseCase: SavedAudioUseCase) {
         self.audioManager = audioManager
         self.savedAudioUseCase = savedAudioUseCase
         setupPlaylist()
+        setupPlaybackFinishedHandler()
     }
     
     private func setupPlaylist() {
@@ -60,6 +84,19 @@ final class AudioPlayerUseCaseImpl: AudioPlayerUseCase {
                 print("Error loading playlist: \(error.localizedDescription)")
             }
         }
+    }
+    
+    private func setupPlaybackFinishedHandler() {
+        audioManager.playbackFinished
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self = self else { return }
+                print("Playback finished, isLooping: \(self.isLooping)")
+                if self.isLooping {
+                    self.playNext()
+                }
+            }
+            .store(in: &cancellables)
     }
     
     func play(_ audio: DownloadedAudio) {
@@ -91,10 +128,8 @@ final class AudioPlayerUseCaseImpl: AudioPlayerUseCase {
         
         if currentIndex < playlist.count - 1 {
             currentIndex += 1
-        } else if isLooping {
-            currentIndex = 0
         } else {
-            return
+            currentIndex = 0
         }
         
         audioManager.play(playlist[currentIndex])
@@ -105,10 +140,8 @@ final class AudioPlayerUseCaseImpl: AudioPlayerUseCase {
         
         if currentIndex > 0 {
             currentIndex -= 1
-        } else if isLooping {
-            currentIndex = playlist.count - 1
         } else {
-            return
+            currentIndex = playlist.count - 1
         }
         
         audioManager.play(playlist[currentIndex])
@@ -116,5 +149,6 @@ final class AudioPlayerUseCaseImpl: AudioPlayerUseCase {
     
     func toggleLoop() {
         isLooping.toggle()
+        print("Loop toggled: \(isLooping)")
     }
 }

@@ -31,7 +31,10 @@ struct MainTabView: View {
                 }
                 .tag(0)
             
-            SavedAudiosView(savedAudioUseCase: container.savedAudioUseCase)
+            SavedAudiosView(
+                savedAudioUseCase: container.savedAudioUseCase,
+                audioPlayerUseCase: container.audioPlayerUseCase
+            )
                 .tabItem {
                     Image(systemName: "music.note.list")
                     Text("Saved")

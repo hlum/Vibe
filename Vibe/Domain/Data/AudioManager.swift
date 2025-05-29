@@ -10,10 +10,24 @@ import AVFoundation
 import Combine
 
 final class AudioManager: AudioManagerRepository {
+    
     // MARK: - Published Properties
     @Published private(set) var currentPlaybackTime: Double = 0
     @Published private(set) var isPlaying: Bool = false
     @Published private(set) var currentAudio: DownloadedAudio?
+    @Published private(set) var playbackFinished = PassthroughSubject<Void, Never>()
+    
+    var currentPlaybackTimePublisher: AnyPublisher<Double, Never> {
+        $currentPlaybackTime.eraseToAnyPublisher()
+    }
+    
+    var isPlayingPublisher: AnyPublisher<Bool, Never> {
+        $isPlaying.eraseToAnyPublisher()
+    }
+    
+    var currentAudioPublisher: AnyPublisher<DownloadedAudio?, Never> {
+        $currentAudio.eraseToAnyPublisher()
+    }
     
     // MARK: - Private Properties
     private var player: AVPlayer?
@@ -41,23 +55,25 @@ final class AudioManager: AudioManagerRepository {
         currentAudio = audio
         
         setupTimeObserver()
+        setupPlaybackFinishedObserver()
         player?.play()
         isPlaying = true
-        
-        setupPlaybackFinishedObserver()
     }
     
     func pause() {
+        print("Pausing audio")
         player?.pause()
         isPlaying = false
     }
     
     func resume() {
+        print("Resuming audio")
         player?.play()
         isPlaying = true
     }
     
     func stop() {
+        print("Stopping audio")
         stopCurrentPlayback()
     }
     
@@ -94,6 +110,8 @@ final class AudioManager: AudioManagerRepository {
             forName: AVPlayerItem.didPlayToEndTimeNotification,
             object: player?.currentItem,
             queue: .main) { [weak self] _ in
+                print("Audio playback finished")
+                self?.playbackFinished.send()
                 self?.stopCurrentPlayback()
             }
     }

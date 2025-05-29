@@ -10,13 +10,15 @@ import SwiftData
 import AVFoundation
 
 struct SavedAudiosView: View {
-    
     @Query private var savedAudios: [DownloadedAudio]
     @StateObject private var vm: SavedAudiosViewModel
+    @Environment(\.container) private var container
     
-    
-    init(savedAudioUseCase: SavedAudioUseCase) {
-        _vm = .init(wrappedValue: SavedAudiosViewModel(savedAudioUseCase: savedAudioUseCase))
+    init(savedAudioUseCase: SavedAudioUseCase, audioPlayerUseCase: AudioPlayerUseCase) {
+        _vm = .init(wrappedValue: SavedAudiosViewModel(
+            savedAudioUseCase: savedAudioUseCase,
+            audioPlayerUseCase: audioPlayerUseCase
+        ))
     }
     
     var body: some View {
@@ -24,22 +26,29 @@ struct SavedAudiosView: View {
             ForEach(savedAudios) { audio in
                 AudioItemRow(
                     audio: audio,
-                    isPlaying: vm.currentlyPlayingAudio?.id == audio.id,
+                    isPlaying: vm.currentAudio?.id == audio.id && vm.isPlaying,
+                    isLooping: $vm.isLooping,
                     currentTime: $vm.currentPlaybackTime,
                     onPlayPause: {
-                        if vm.currentlyPlayingAudio?.id == audio.id {
-                            vm.currentPlayer?.pause()
-                            vm.currentPlayer = nil
-                            vm.currentlyPlayingAudio = nil
-                            vm.currentPlaybackTime = 0
+                        if vm.currentAudio?.id == audio.id {
+                            if vm.isPlaying {
+                                vm.pauseAudio()
+                            } else {
+                                vm.resumeAudio()
+                            }
                         } else {
                             vm.playAudio(audio)
                         }
                     },
                     onSeek: { time in
                         vm.seekToTime(time)
-                    }
+                    },
+                    onNext: vm.playNext,
+                    onPrevious: vm.playPrevious,
+                    onToggleLoop: vm.toggleLoop
                 )
+                .listRowInsets(EdgeInsets())
+                .listRowBackground(Color.clear)
                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                     Button {
                         Task {
@@ -49,10 +58,10 @@ struct SavedAudiosView: View {
                         Text("Delete")
                             .foregroundStyle(.red)
                     }
-
                 }
             }
         }
+        .listStyle(.plain)
         .navigationTitle("Saved Audios")
     }
 }
@@ -63,9 +72,13 @@ struct AudioItemRow: View {
     
     let audio: DownloadedAudio
     var isPlaying: Bool
+    @Binding var isLooping: Bool
     @Binding var currentTime: TimeInterval
     var onPlayPause: () -> Void
     var onSeek: (TimeInterval) -> Void
+    var onNext: () -> Void
+    var onPrevious: () -> Void
+    var onToggleLoop: () -> Void
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -86,41 +99,69 @@ struct AudioItemRow: View {
                         .font(.title)
                         .foregroundColor(.blue)
                 }
+                .buttonStyle(.plain)
             }
+            .padding(.horizontal)
             
             if isPlaying {
-
-                Slider(value: Binding(get: {
-                    sliderValue
-                }, set: { newValue in
+                VStack(spacing: 8) {
+                    HStack(spacing: 20) {
+                        Button(action: onPrevious) {
+                            Image(systemName: "backward.fill")
+                                .font(.title2)
+                                .foregroundColor(.blue)
+                        }
+                        .buttonStyle(.plain)
+                        
+                        Button(action: onToggleLoop) {
+                            Image(systemName: isLooping ? "repeat.1" : "repeat")
+                                .font(.title2)
+                                .foregroundColor(isLooping ? .blue : .gray)
+                        }
+                        .buttonStyle(.plain)
+                        
+                        Button(action: onNext) {
+                            Image(systemName: "forward.fill")
+                                .font(.title2)
+                                .foregroundColor(.blue)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(.vertical, 4)
+                    
+                    Slider(value: Binding(get: {
+                        sliderValue
+                    }, set: { newValue in
                         sliderValue = newValue
                         currentTime = newValue
-                }), in: 0...audio.duration) { editing in
-                    isEditing = editing
-                    
-                    
-                    if !editing {
-                        onSeek(sliderValue)
+                    }), in: 0...audio.duration) { editing in
+                        isEditing = editing
+                        if !editing {
+                            onSeek(sliderValue)
+                        }
                     }
-                }
-                
-                HStack {
-                    Text(formatDuration(currentTime))
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    .padding(.horizontal)
                     
-                    Spacer()
-                    
-                    Text(formatDuration(audio.duration))
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    HStack {
+                        Text(formatDuration(currentTime))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        Spacer()
+                        
+                        Text(formatDuration(audio.duration))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.horizontal)
                 }
             }
         }
         .padding(.vertical, 8)
+        .background(Color(.systemBackground))
         .onChange(of: currentTime) { _, newValue in
             if !isEditing {
-                    sliderValue = newValue
+                sliderValue = newValue
             }
         }
     }
