@@ -24,9 +24,11 @@ protocol ContainerProtocol {
 final class DepedencyContainer: ContainerProtocol {
     
     private let modelContainer: ModelContainer
+    private let audioManager: AudioManager
     
     init(modelContainer: ModelContainer) {
         self.modelContainer = modelContainer
+        self.audioManager = AudioManager()
     }
     
     var modelContext: ModelContext {
@@ -34,7 +36,7 @@ final class DepedencyContainer: ContainerProtocol {
     }
     
     var audioManagerRepo: AudioManagerRepository {
-        AudioManager()
+        audioManager
     }
     
     var downloader: Downloader {

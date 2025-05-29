@@ -32,9 +32,9 @@ final class MainTabViewModel: ObservableObject {
             
             guard let localURL else { return }
             
-            let duration = try await AudioManager.shared.getAudioDuration(from: localURL)
             
-            let downloadedAudio = DownloadedAudio(title: fileName, originalURL: youtubeURL, duration: duration)
+            // TODO: get the real duration
+            let downloadedAudio = DownloadedAudio(title: fileName, originalURL: youtubeURL, duration: 0)
                 
             try await savedAudioUseCase.saveAudio(downloadedAudio)
             
