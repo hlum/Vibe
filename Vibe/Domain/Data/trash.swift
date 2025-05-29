@@ -9,40 +9,19 @@ import Foundation
 import YouTubeKit
 
 
-enum YoutubeDownloaderError: LocalizedError {
-    case invalidURL
-    case invalidResponse
-    case streamNotFound
-    case downloadableURLNotFound
-    case decodingError(Error)
-    case networkError(Error)
-    
-    var errorDescription: String? {
-        switch self {
-        case .invalidURL:
-            return NSLocalizedString("Invalid URL", comment: "")
-        case .downloadableURLNotFound:
-            return NSLocalizedString("Downloadable URL not found.", comment: "")
-        case .streamNotFound:
-            return NSLocalizedString("Stream not found.", comment: "")
-        case .invalidResponse:
-            return NSLocalizedString("Invalid response from server", comment: "")
-        case .decodingError(let error):
-            return String(format: NSLocalizedString("Failed to decode response: %@", comment: ""), error.localizedDescription)
-        case .networkError(let error):
-            return String(format: NSLocalizedString("Network error: %@", comment: ""), error.localizedDescription)
-        }
-    }
-}
 
-
-final class YoutubeDownloader {
-    var currentDownloadingProcesses: (([DownloadingProcess]) -> Void)? = nil
+final class DownloaderRepo {
+    private var currentDownloadingProcesses: (([DownloadingProcess]) -> Void)?
     private var currentProcesses: [DownloadingProcess] = []
     private var activeDownloads: [String: FileDownloader] = [:]
     private let maxRetries = 3
-    
-    func downloadAudioAndSave(from urlString: String, fileName: String) async throws -> URL {
+        
+    func downloadAudioAndSave(
+        from urlString: String,
+        fileName: String,
+        currentDownloadingProcesses: @escaping ([DownloadingProcess]) -> Void
+    ) async throws -> URL{
+        self.currentDownloadingProcesses = currentDownloadingProcesses
         guard !urlString.isEmpty else {
             throw YoutubeDownloaderError.invalidURL
         }
@@ -53,35 +32,32 @@ final class YoutubeDownloader {
         }
         
         do {
-            guard let downloadableURL = try await getDownloadableURL(from: url) else {
-                throw YoutubeDownloaderError.downloadableURLNotFound
-            }
+            let downloadableURL = try await getDownloadableURL(from: url)
             
             let downloadedURL = try await downloadFileWithRetry(fileName: fileName, from: downloadableURL)
             let data = try Data(contentsOf: downloadedURL)
             
-            return try saveFile(with: data, fileName: fileName)
-        } catch let error as YoutubeDownloaderError {
-            throw error
+            let localURL = try saveFile(with: data, fileName: fileName)
+            
+            return localURL
+            
         } catch {
-            throw YoutubeDownloaderError.networkError(error)
+            print("Error downloading file: \(error.localizedDescription)")
+            throw error
         }
     }
         
-    private func getDownloadableURL(from url: URL) async throws -> URL? {
-        do {
-            let video = YouTube(url: url)
-            let streams = try await video.streams
-            let audioOnlyStreams = streams.filterAudioOnly()
-            
-            guard let stream = audioOnlyStreams.filter ({ $0.isNativelyPlayable }).highestAudioBitrateStream() else {
-                throw YoutubeDownloaderError.streamNotFound
-            }
-            
-            return stream.url
-        } catch {
-            throw YoutubeDownloaderError.decodingError(error)
+    func getDownloadableURL(from url: URL) async throws -> URL {
+        
+        let video = YouTube(url: url)
+        let streams = try await video.streams
+        let audioOnlyStreams = streams.filterAudioOnly()
+        
+        guard let stream = audioOnlyStreams.filter ({ $0.isNativelyPlayable }).highestAudioBitrateStream() else {
+            throw YoutubeDownloaderError.streamNotFound
         }
+        
+        return stream.url
     }
     
     
@@ -108,7 +84,7 @@ final class YoutubeDownloader {
     }
     
     private func downloadFile(fileName: String, from url: URL) async throws -> URL {
-        var currentProcess = DownloadingProcess(fileName: fileName, progress: 0)
+        var currentProcess = DownloadingProcess(fileName: fileName, progress: 0, expectedByte: 0, finishedByte: 0)
         var hasResumed = false
         
         // Create a new downloader and store it
@@ -116,9 +92,9 @@ final class YoutubeDownloader {
         activeDownloads[currentProcess.id] = fileDownloader
         
         return try await withCheckedThrowingContinuation { continuation in
-            fileDownloader.download(
-                from: url) { progress in
-                    currentProcess = DownloadingProcess(id: currentProcess.id, fileName: fileName, progress: progress)
+            fileDownloader
+                .download(from: url) { progress,finishedByte,totalByte in
+                    currentProcess = DownloadingProcess(id: currentProcess.id, fileName: fileName, progress: progress, expectedByte: Double(totalByte), finishedByte: Double(finishedByte))
                     self.updateDownloadingProcess(currentProcess)
                 } completionHandler: { [weak self] result in
                     guard let self = self else { return }
@@ -130,8 +106,17 @@ final class YoutubeDownloader {
                     
                     switch result {
                     case .success(let fileURL):
-                        self.removeDownloadingProcess(currentProcess)
-                        continuation.resume(returning: fileURL)
+                        do {
+                            // Read the file data immediately after download
+                            let data = try Data(contentsOf: fileURL)
+                            // Save the data to a permanent location
+                            let savedURL = try self.saveFile(with: data, fileName: fileName)
+                            self.removeDownloadingProcess(currentProcess)
+                            continuation.resume(returning: savedURL)
+                        } catch {
+                            self.removeDownloadingProcess(currentProcess)
+                            continuation.resume(throwing: error)
+                        }
                     case .failure(let error):
                         self.removeDownloadingProcess(currentProcess)
                         if let urlError = error as? URLError {
@@ -150,13 +135,29 @@ final class YoutubeDownloader {
     }
     
     private func saveFile(with data: Data, fileName: String) throws -> URL {
-        let documentsPath = FileManager.default.urls(for: .musicDirectory, in: .userDomainMask)[0]
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        
+        // Create the directory if it doesn't exist
+        do {
+            try FileManager.default.createDirectory(at: documentsPath, withIntermediateDirectories: true)
+        } catch {
+            print("Error creating directory: \(error.localizedDescription)")
+            throw YoutubeDownloaderError.networkError(error)
+        }
+        
         let localURL = documentsPath.appendingPathComponent("\(fileName).m4a")
         
         do {
+            // Remove existing file if it exists
+            if FileManager.default.fileExists(atPath: localURL.path) {
+                try FileManager.default.removeItem(at: localURL)
+            }
+            
             try data.write(to: localURL)
+            print("Successfully saved file to: \(localURL.path)")
             return localURL
         } catch {
+            print("Error saving file: \(error.localizedDescription)")
             throw YoutubeDownloaderError.networkError(error)
         }
     }

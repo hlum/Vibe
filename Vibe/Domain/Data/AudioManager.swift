@@ -8,8 +8,8 @@
 import Foundation
 import AVFoundation
 
-final class AudioManager {
-    
+final class AudioManager: AudioManagerRepository {
+    static let shared = AudioManager()
     func getAudioDuration(from url: URL) async throws -> Double {
         let asset = AVAsset(url: url)
         let duration = try await asset.load(.duration)

@@ -7,37 +7,12 @@
 
 import SwiftUI
 
-struct DownloadingProcess: Identifiable {
-    let id: String
-    let fileName: String
-    var progress: Double
-    
-    init(id: String = UUID().uuidString, fileName: String, progress: Double) {
-        self.id = id
-        self.fileName = fileName
-        self.progress = progress
-    }
-    
-    
-    static func dummyData() -> [DownloadingProcess] {
-        return [
-            DownloadingProcess(fileName: "Lynn Lynn", progress: 0.1),
-            DownloadingProcess(fileName: "Song 2", progress:0.20),
-            DownloadingProcess(fileName: "fasdfa", progress: 0.8)
-        ]
-    }
-    
-    mutating
-    func updateProgress(_ progress: Double) {
-        self.progress = progress
-    }
-}
-
 struct SearchAndDownloadView: View {
     @State private var showFileNameInputAlert: Bool = false
     @State private var fileName: String = ""
     @Binding var youtubeURL: String
     @Binding var downloadingProcesses: [DownloadingProcess]
+    
     let download: (_ fileName: String) -> Void
     var body: some View {
         VStack {
@@ -52,6 +27,7 @@ struct SearchAndDownloadView: View {
             
             
             ScrollView {
+                Text("\(downloadingProcesses.count)")
                 ForEach(downloadingProcesses) { process in
                     VStack(alignment: .leading, spacing: 20) {
                         Text(process.fileName)
@@ -60,7 +36,12 @@ struct SearchAndDownloadView: View {
                             ProgressView(value: process.progress)
                             Text("\(process.progress * 100, specifier: "%.1f") %")
                         }
+//                        let text = "\(process.expectedByte/1024, specifier: "%.1f")mb"
+                        Text("\(process.finishedByte/102400 , specifier: "%.1f")mb")
+                        Text("\(process.expectedByte/102400 , specifier: "%.1f")mb")
+
                     }
+                    
                     .frame(minHeight: 55)
                     .padding()
                     
@@ -84,7 +65,7 @@ struct SearchAndDownloadView: View {
                     .padding()
                     .foregroundStyle(.white)
             }
-
+            
         }
         .overlay(alignment: .center) {
             if showFileNameInputAlert {
@@ -92,6 +73,7 @@ struct SearchAndDownloadView: View {
             }
         }
     }
+
 }
 
 
@@ -125,7 +107,6 @@ extension SearchAndDownloadView {
                 HStack {
                     TextField(NSLocalizedString("Enter file name", comment: ""), text: $fileName)
                     .font(.title2.bold())
-                    .keyboardType(.numberPad)
                     .textFieldStyle(.plain)
                 }
                 .padding()
