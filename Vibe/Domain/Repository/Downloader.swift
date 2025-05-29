@@ -8,6 +8,7 @@
 import Foundation
 
 protocol Downloader {
+    func createNewInstance() -> Downloader
     func download(
         from url: URL,
         progressHandler: @escaping (Double, Int64, Int64) -> Void,
