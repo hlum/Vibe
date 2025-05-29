@@ -9,14 +9,20 @@ import SwiftUI
 import SwiftData
 
 struct MainTabView: View {
-    @StateObject private var vm: MainTabViewModel = .init()
-    @Environment(\.modelContext) private var modelContext
+    @StateObject private var vm: MainTabViewModel
+    @Environment(\.container) private var container
     @State private var selectedTabIndex: Int = 0
+    
+    init(vm: MainTabViewModel) {
+        _vm = .init(wrappedValue: vm)
+    }
+    
+    
     var body: some View {
         TabView(selection: $selectedTabIndex) {
             SearchAndDownloadView(youtubeURL: $vm.youtubeURL, downloadingProcesses: $vm.downloadingProcesses, download: {fileName in
                 Task {
-                    await vm.downloadAndSave(fileName: fileName)
+                    await vm.downloadAndSave(fileName: fileName, youtubeURL: vm.youtubeURL)
                 }
             })
                 .tabItem {
@@ -25,19 +31,13 @@ struct MainTabView: View {
                 }
                 .tag(0)
             
-            SavedAudiosView()
+            SavedAudiosView(savedAudioUseCase: container.savedAudioUseCase)
                 .tabItem {
                     Image(systemName: "music.note.list")
                     Text("Saved")
                 }
                 .tag(1)
         }
-        .onAppear {
-            vm.setModelContext(modelContext)
-        }
     }
 }
 
-#Preview {
-    MainTabView()
-}

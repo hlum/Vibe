@@ -12,6 +12,7 @@ struct SearchAndDownloadView: View {
     @State private var fileName: String = ""
     @Binding var youtubeURL: String
     @Binding var downloadingProcesses: [DownloadingProcess]
+    
     let download: (_ fileName: String) -> Void
     var body: some View {
         VStack {

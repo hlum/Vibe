@@ -10,9 +10,14 @@ import SwiftData
 import AVFoundation
 
 struct SavedAudiosView: View {
-    @Environment(\.modelContext) private var modelContext
+    
     @Query private var savedAudios: [DownloadedAudio]
-    @StateObject private var vm = SavedAudiosViewModel()
+    @StateObject private var vm: SavedAudiosViewModel
+    
+    
+    init(savedAudioUseCase: SavedAudioUseCase) {
+        _vm = .init(wrappedValue: SavedAudiosViewModel(savedAudioUseCase: savedAudioUseCase))
+    }
     
     var body: some View {
         List {
@@ -49,9 +54,6 @@ struct SavedAudiosView: View {
             }
         }
         .navigationTitle("Saved Audios")
-        .onAppear {
-            vm.setSwiftDataManager(SwiftDataManager(context: modelContext))
-        }
     }
 }
 
@@ -137,6 +139,4 @@ struct AudioItemRow: View {
     }
 }
 
-#Preview {
-    SavedAudiosView()
-}
+

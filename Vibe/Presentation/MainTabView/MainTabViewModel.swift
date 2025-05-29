@@ -13,23 +13,32 @@ final class MainTabViewModel: ObservableObject {
     @Published var downloadingProcesses: [DownloadingProcess] = []
     @Published var youtubeURL: String = ""
     
-    var youtubeDownloader: YoutubeDownloader?
+    var youtubeDownloaderUseCase: YoutubeDownloaderUseCase
+    var savedAudioUseCase: SavedAudioUseCase
     
-
-    
-    @MainActor
-    func setModelContext(_ model: ModelContext) {
-        youtubeDownloader = YoutubeDownloader(swiftDataManager: SwiftDataManager(context: model))
+    init(youtubeDownloaderUseCase: YoutubeDownloaderUseCase, savedAudioUseCase: SavedAudioUseCase) {
+        self.youtubeDownloaderUseCase = youtubeDownloaderUseCase
+        self.savedAudioUseCase = savedAudioUseCase
     }
     
     
-    func downloadAndSave(fileName: String) async {
+    func downloadAndSave(fileName: String, youtubeURL: String) async {
         do {
-            try await youtubeDownloader?.downloadAudioAndSave(from: youtubeURL, fileName: fileName, currentDownloadingProcesses: { processes in
+            let localURL = await youtubeDownloaderUseCase.downloadAndGetLocalURL(fileName: fileName, youtubeLink: youtubeURL) { processes in
                 DispatchQueue.main.async {
                     self.downloadingProcesses = processes
                 }
-            })
+            }
+            
+            guard let localURL else { return }
+            
+            let duration = try await AudioManager.shared.getAudioDuration(from: localURL)
+            
+            let downloadedAudio = DownloadedAudio(title: fileName, originalURL: youtubeURL, duration: duration)
+                
+            try await savedAudioUseCase.saveAudio(downloadedAudio)
+            
+            
         } catch {
             print("Error downloading: \(error.localizedDescription)")
         }

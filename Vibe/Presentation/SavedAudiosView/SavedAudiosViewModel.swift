@@ -15,8 +15,13 @@ final class SavedAudiosViewModel: ObservableObject {
     @Published var currentlyPlayingAudio: DownloadedAudio?
     @Published var currentPlaybackTime: Double = 0
     
-    private var swiftDataManager: SwiftDataManager?
     private var timeObserver: Any?
+    
+    private let savedAudioUseCase: SavedAudioUseCase
+    
+    init(savedAudioUseCase: SavedAudioUseCase) {
+        self.savedAudioUseCase = savedAudioUseCase
+    }
     
     deinit {
         if let timeObserver = timeObserver {
@@ -30,9 +35,6 @@ final class SavedAudiosViewModel: ObservableObject {
         currentPlayer?.seek(to: targetTime)
     }
 
-    func setSwiftDataManager(_ swiftDataManager: SwiftDataManager) {
-        self.swiftDataManager = swiftDataManager
-    }
     
     func playAudio(_ audio: DownloadedAudio) {
         print("Playing \(audio.title)")
@@ -91,9 +93,8 @@ final class SavedAudiosViewModel: ObservableObject {
                 if let timeObserver = self.timeObserver {
                     self.currentPlayer?.removeTimeObserver(timeObserver)
                 }
-
             }
-            try await swiftDataManager?.deleteDownloadedAudio(audio)
+            try await savedAudioUseCase.deleteAudio(audio)
         } catch {
             print("Error deleting audio: \(error.localizedDescription)")
         }
