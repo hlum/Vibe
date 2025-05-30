@@ -25,6 +25,22 @@ struct SearchAndDownloadView: View {
                 .padding()
                 .padding(.bottom, 20)
             
+            Button {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                    showFileNameInputAlert.toggle()
+                }
+            } label: {
+                Text("Download")
+                    .font(.headline)
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 55)
+                    .background(.blue)
+                    .cornerRadius(10)
+                    .padding()
+                    .foregroundStyle(.white)
+            }
+
             
             ScrollView {
                 ForEach(downloadingProcesses) { process in
@@ -47,24 +63,6 @@ struct SearchAndDownloadView: View {
                     Divider()
                 }
             }
-            
-            Spacer()
-            Button {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                    showFileNameInputAlert.toggle()
-                }
-            } label: {
-                Text("Download")
-                    .font(.headline)
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 55)
-                    .background(.blue)
-                    .cornerRadius(10)
-                    .padding()
-                    .foregroundStyle(.white)
-            }
-            
         }
         .overlay(alignment: .center) {
             if showFileNameInputAlert {
