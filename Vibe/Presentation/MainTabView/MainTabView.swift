@@ -56,6 +56,18 @@ struct MainTabView: View {
             }
             .tag(2)
         }
+        .overlay(alignment: .bottom) {
+            if vm.currentAudio != nil {
+                FloatingCurrentMusicView(audioPlayerUseCase: audioPlayerUseCase)
+                    .transition(.scale)
+            }
+        }
     }
 }
 
+
+#Preview {
+    @Previewable
+    @Environment(\.container) var container
+    MainTabView(savedAudioUseCase: container.savedAudioUseCase, audioPlayerUseCase: container.audioPlayerUseCase, youtubeDownloaderUseCase: container.youtubeDownloaderUseCase)
+}
