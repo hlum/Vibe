@@ -9,37 +9,52 @@ import SwiftUI
 import SwiftData
 
 struct MainTabView: View {
-    @StateObject private var vm: MainTabViewModel
-    @Environment(\.container) private var container
-    @State private var selectedTabIndex: Int = 0
+    @State private var selectedTab = 0
+    private let savedAudioUseCase: SavedAudioUseCase
+    private let audioPlayerUseCase: AudioPlayerUseCase
     
-    init(vm: MainTabViewModel) {
-        _vm = .init(wrappedValue: vm)
+    @StateObject private var vm: MainTabViewModel
+    
+    init(
+        savedAudioUseCase: SavedAudioUseCase,
+        audioPlayerUseCase: AudioPlayerUseCase,
+        youtubeDownloaderUseCase: YoutubeDownloaderUseCase
+    ) {
+        self.savedAudioUseCase = savedAudioUseCase
+        self.audioPlayerUseCase = audioPlayerUseCase
+        
+        _vm = .init(wrappedValue: MainTabViewModel(youtubeDownloaderUseCase: youtubeDownloaderUseCase, savedAudioUseCase: savedAudioUseCase, audioPlayerUseCase: audioPlayerUseCase))
     }
     
-    
     var body: some View {
-        TabView(selection: $selectedTabIndex) {
-            SearchAndDownloadView(youtubeURL: $vm.youtubeURL, downloadingProcesses: $vm.downloadingProcesses, download: {fileName in
+        TabView(selection: $selectedTab) {
+            SearchAndDownloadView(youtubeURL: $vm.youtubeURL, downloadingProcesses: $vm.downloadingProcesses) { fileName in
                 Task {
                     await vm.downloadAndSave(fileName: fileName, youtubeURL: vm.youtubeURL)
                 }
-            })
-                .tabItem {
-                    Image(systemName: "magnifyingglass")
-                    Text("Search")
-                }
-                .tag(0)
+            }
+            .tabItem {
+                Label("Search", systemImage: "magnifyingglass")
+            }
+            .tag(0)
+            NavigationStack {
+                SavedAudiosView(
+                    savedAudioUseCase: savedAudioUseCase,
+                    audioPlayerUseCase: audioPlayerUseCase
+                )
+            }
+            .tabItem {
+                Label("Saved", systemImage: "music.note.list")
+            }
+            .tag(1)
             
-            SavedAudiosView(
-                savedAudioUseCase: container.savedAudioUseCase,
-                audioPlayerUseCase: container.audioPlayerUseCase
-            )
-                .tabItem {
-                    Image(systemName: "music.note.list")
-                    Text("Saved")
-                }
-                .tag(1)
+            NavigationStack {
+                CurrentPlayingView(audioPlayerUseCase: audioPlayerUseCase)
+            }
+            .tabItem {
+                Label("Now Playing", systemImage: "play.circle.fill")
+            }
+            .tag(2)
         }
     }
 }
