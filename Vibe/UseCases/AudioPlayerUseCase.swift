@@ -7,6 +7,7 @@
 
 import Foundation
 import Combine
+import MediaPlayer
 
 @MainActor
 protocol AudioPlayerUseCase {
@@ -21,6 +22,7 @@ protocol AudioPlayerUseCase {
     var currentAudioPublisher: AnyPublisher<DownloadedAudio?, Never> { get }
     var isLoopingPublisher: AnyPublisher<Bool, Never> { get }
     
+    func getDuration(for url: URL) async throws -> Double
     func play(_ audio: DownloadedAudio)
     func pause()
     func resume()
@@ -40,6 +42,18 @@ final class AudioPlayerUseCaseImpl: AudioPlayerUseCase {
     @Published private(set) var isLooping: Bool = false
     private var currentIndex: Int = -1
     private var cancellables = Set<AnyCancellable>()
+    private var playCommandHandler: Any?
+    private var pauseCommandHandler: Any?
+    private var nextTrackCommandHandler: Any?
+    private var previousTrackCommandHandler: Any?
+    
+    deinit {
+        let commandCenter = MPRemoteCommandCenter.shared()
+        commandCenter.playCommand.removeTarget(nil)
+        commandCenter.pauseCommand.removeTarget(nil)
+        commandCenter.nextTrackCommand.removeTarget(nil)
+        commandCenter.previousTrackCommand.removeTarget(nil)
+    }
     
     var currentPlaybackTime: Double {
         audioManager.currentPlaybackTime
@@ -74,7 +88,9 @@ final class AudioPlayerUseCaseImpl: AudioPlayerUseCase {
         self.savedAudioUseCase = savedAudioUseCase
         setupPlaylist()
         setupPlaybackFinishedHandler()
+        setupRemoteCommandCenter()
     }
+    
     
     private func setupPlaylist() {
         Task {
@@ -97,6 +113,10 @@ final class AudioPlayerUseCaseImpl: AudioPlayerUseCase {
                 }
             }
             .store(in: &cancellables)
+    }
+    
+    func getDuration(for url: URL) async throws -> Double {
+        try await audioManager.getAudioDuration(from: url)
     }
     
     func play(_ audio: DownloadedAudio) {
@@ -151,4 +171,65 @@ final class AudioPlayerUseCaseImpl: AudioPlayerUseCase {
         isLooping.toggle()
         print("Loop toggled: \(isLooping)")
     }
+    
+    
+    func setupRemoteCommandCenter() {
+        let commandCenter = MPRemoteCommandCenter.shared()
+
+        // Store handlers as properties to maintain strong references
+        playCommandHandler = commandCenter.playCommand.addTarget { [self] event in
+            Task { @MainActor in
+                if self.isPlaying {
+                    self.pause()
+                } else {
+                    if let currentAudio = self.currentAudio {
+                        self.resume()
+                    } else if let firstSong = self.playlist.first {
+                        self.play(firstSong)
+                    }
+                }
+            }
+            return .success
+        }
+
+        pauseCommandHandler = commandCenter.pauseCommand.addTarget { [weak self] event in
+            
+            if self?.isPlaying ?? false {
+                    self?.pause()
+                }
+            
+            return .success
+        }
+
+        nextTrackCommandHandler = commandCenter.nextTrackCommand.addTarget { [weak self] event in
+            
+                self?.playNext()
+            
+            return .success
+        }
+        
+        previousTrackCommandHandler = commandCenter.previousTrackCommand.addTarget { [weak self] event in
+            
+                self?.playPrevious()
+            
+            return .success
+        }
+        
+        
+        commandCenter.changePlaybackPositionCommand.addTarget { [weak self] event in
+            guard let self = self,
+                        let positionEvent = event as? MPChangePlaybackPositionCommandEvent else {
+                      return .commandFailed
+                  }
+            
+            let newPosition = positionEvent.positionTime
+            guard newPosition >= 0 else {
+                       return .commandFailed
+                   }
+            
+            self.seek(to: newPosition)
+            return .success
+        }
+    }
+    
 }

@@ -30,11 +30,15 @@ struct VibeApp: App {
     
     var body: some Scene {
         WindowGroup {
-            let mainTabViewModel = MainTabViewModel(youtubeDownloaderUseCase: container.youtubeDownloaderUseCase, savedAudioUseCase: container.savedAudioUseCase)
             
-            MainTabView(vm: mainTabViewModel)
+            MainTabView(
+                savedAudioUseCase: container.savedAudioUseCase,
+                audioPlayerUseCase: container.audioPlayerUseCase, youtubeDownloaderUseCase: container.youtubeDownloaderUseCase
+            )
                 .injectDependencies(container)
         }
         .modelContainer(container.modelContext.container)
     }
 }
+
+
