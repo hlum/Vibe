@@ -40,3 +40,5 @@ struct VibeApp: App {
         .modelContainer(container.modelContext.container)
     }
 }
+
+
