@@ -15,10 +15,12 @@ final class MainTabViewModel: ObservableObject {
     
     var youtubeDownloaderUseCase: YoutubeDownloaderUseCase
     var savedAudioUseCase: SavedAudioUseCase
+    var audioPlayerUseCase: AudioPlayerUseCase
     
-    init(youtubeDownloaderUseCase: YoutubeDownloaderUseCase, savedAudioUseCase: SavedAudioUseCase) {
+    init(youtubeDownloaderUseCase: YoutubeDownloaderUseCase, savedAudioUseCase: SavedAudioUseCase, audioPlayerUseCase: AudioPlayerUseCase) {
         self.youtubeDownloaderUseCase = youtubeDownloaderUseCase
         self.savedAudioUseCase = savedAudioUseCase
+        self.audioPlayerUseCase = audioPlayerUseCase
     }
     
     
@@ -34,7 +36,8 @@ final class MainTabViewModel: ObservableObject {
             
             
             // TODO: get the real duration
-            let downloadedAudio = DownloadedAudio(title: fileName, originalURL: youtubeURL, duration: 0)
+            let duration = try await audioPlayerUseCase.getDuration(for: localURL)
+            let downloadedAudio = DownloadedAudio(title: fileName, originalURL: youtubeURL, duration: duration)
                 
             try await savedAudioUseCase.saveAudio(downloadedAudio)
             

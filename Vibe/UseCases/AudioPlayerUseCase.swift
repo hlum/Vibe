@@ -21,6 +21,7 @@ protocol AudioPlayerUseCase {
     var currentAudioPublisher: AnyPublisher<DownloadedAudio?, Never> { get }
     var isLoopingPublisher: AnyPublisher<Bool, Never> { get }
     
+    func getDuration(for url: URL) async throws -> Double
     func play(_ audio: DownloadedAudio)
     func pause()
     func resume()
@@ -97,6 +98,10 @@ final class AudioPlayerUseCaseImpl: AudioPlayerUseCase {
                 }
             }
             .store(in: &cancellables)
+    }
+    
+    func getDuration(for url: URL) async throws -> Double {
+        try await audioManager.getAudioDuration(from: url)
     }
     
     func play(_ audio: DownloadedAudio) {
