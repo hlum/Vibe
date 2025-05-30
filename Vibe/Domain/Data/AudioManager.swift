@@ -56,11 +56,21 @@ final class AudioManager: NSObject, AudioManagerRepository, AVAudioPlayerDelegat
             return
         }
         
-        player = AVPlayer(url: fileURL)
-     
-
-        currentAudio = audio
+        print(fileURL)
         
+        let asset = AVAsset(url: fileURL)
+        let playerItem = AVPlayerItem(asset: asset)
+        player = AVPlayer(playerItem: playerItem)
+        
+        
+        // Trim the void at the end
+        playerItem.forwardPlaybackEndTime = CMTime(seconds: audio.duration, preferredTimescale: 600)
+        
+        
+        // Wait for the player item to be ready to play
+        playerItem.addObserver(self, forKeyPath: "status", options: [.new], context: nil)
+        
+        currentAudio = audio
         
         setupTimeObserver()
         setupPlaybackFinishedObserver()
@@ -100,9 +110,11 @@ final class AudioManager: NSObject, AudioManagerRepository, AVAudioPlayerDelegat
         self.currentPlaybackTime = time
     }
     
+    
     func getAudioDuration(from url: URL) async throws -> Double {
-        let player = AVAsset(url: url)
-        return try await player.load(.duration).seconds
+        let player = try AVAudioPlayer(contentsOf: url)
+        let duration = player.duration
+        return duration
     }
     
     
@@ -119,9 +131,21 @@ final class AudioManager: NSObject, AudioManagerRepository, AVAudioPlayerDelegat
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
     }
     
-
-
-
+    override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
+        if keyPath == "status",
+           let playerItem = object as? AVPlayerItem {
+            switch playerItem.status {
+            case .readyToPlay:
+                print("Player item is ready to play")
+            case .failed:
+                print("Player item failed to load: \(String(describing: playerItem.error))")
+            case .unknown:
+                print("Player item status unknown")
+            @unknown default:
+                break
+            }
+        }
+    }
     
     // MARK: - Private Methods
     
