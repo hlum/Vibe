@@ -97,6 +97,7 @@ final class AudioManager: NSObject, AudioManagerRepository, AVAudioPlayerDelegat
     func seek(to time: Double) {
         let targetTime = CMTime(seconds: time, preferredTimescale: 600)
         player?.seek(to: targetTime)
+        self.currentPlaybackTime = time
     }
     
     func getAudioDuration(from url: URL) async throws -> Double {

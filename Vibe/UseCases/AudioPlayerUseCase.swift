@@ -214,6 +214,22 @@ final class AudioPlayerUseCaseImpl: AudioPlayerUseCase {
             
             return .success
         }
+        
+        
+        commandCenter.changePlaybackPositionCommand.addTarget { [weak self] event in
+            guard let self = self,
+                        let positionEvent = event as? MPChangePlaybackPositionCommandEvent else {
+                      return .commandFailed
+                  }
+            
+            let newPosition = positionEvent.positionTime
+            guard newPosition >= 0 else {
+                       return .commandFailed
+                   }
+            
+            self.seek(to: newPosition)
+            return .success
+        }
     }
     
 }
