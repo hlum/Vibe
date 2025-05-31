@@ -8,6 +8,11 @@
 import SwiftUI
 import Combine
 
+enum IDForMatchedGeometry: Hashable {
+    case image
+    case title
+}
+
 @MainActor
 final class FloatingCurrentMusicViewModel: ObservableObject {
     @Published var currentPlaybackTime: Double = 0
@@ -64,53 +69,230 @@ final class FloatingCurrentMusicViewModel: ObservableObject {
 
 struct FloatingCurrentMusicView: View {
     @StateObject private var vm: FloatingCurrentMusicViewModel
+    @State private var showCurrentPlayingDetail: Bool = false
+    
+    
+    @State private var dragStartTime: Date?
+    @State private var dragTranslation: CGFloat = 0
+    
+    @Namespace private var animation
     
     init(audioPlayerUseCase: AudioPlayerUseCase) {
         _vm = .init(wrappedValue: .init(audioPlayerUseCase: audioPlayerUseCase))
     }
     var body: some View {
-        HStack {
-            Image(systemName: "music.note")
-                .font(.system(size: 30))
-                .foregroundColor(.black)
-                .frame(width: 50, height: 50)
-                .background(Color.gray.opacity(0.2))
-                .cornerRadius(10)
-                .padding(.horizontal)
-            
-            
-            Text(vm.currentAudio?.title ?? "No Music")
-                .font(.system(size: 14))
-                .lineLimit(1)
-            
-            
-            Spacer()
-            
-            HStack(spacing: 0) {
-                Button {
-                    if vm.isPlaying {
-                        vm.pause()
-                    } else {
-                        vm.resume()
-                    }
-                } label: {
-                    Image(systemName: vm.isPlaying ? "pause.fill" : "play.fill")
-                        .font(.system(size: 20))
-                }
-                .frame(width: 50, height: 50)
+        if !showCurrentPlayingDetail {
+            collapsedFloatingCurrentMusicView
+                .transition(.scale(scale: 0.9, anchor: .topTrailing))
+        } else {
+            expandedFloatingCurrentMusicView
+                .transition(.scale(scale: 0.1, anchor: .bottomLeading))
+        }
+    }
+}
+
+
+extension FloatingCurrentMusicView {
+    private var expandedFloatingCurrentMusicView: some View {
+        VStack(spacing: 16) {
+            if let currentAudio = vm.currentAudio {
+                Image(systemName: "music.note")
+                    .matchedGeometryEffect(id: IDForMatchedGeometry.image, in: animation)
+                    .font(.system(size: 80))
+                    .foregroundColor(.black)
+                    .frame(width: 200, height: 200)
+                    .background(Color.gray.opacity(0.2))
+                    .cornerRadius(10)
+                    .scaleEffect(CGFloat(1-(dragTranslation / 1000)))
+                
+                    .offset(x: -dragTranslation / 4)
 
                 
-                Button {
-                    vm.playNext()
-                } label: {
-                    Image(systemName: "forward.fill")
-                        .font(.system(size: 20))
+                // Song Title
+                Text(currentAudio.title)
+                    .matchedGeometryEffect(id: IDForMatchedGeometry.title, in: animation)
+                    .font(.title2)
+                    .bold()
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(.black)
+                    .scaleEffect(CGFloat(1-(dragTranslation / 1000)))
+                    .offset(x: -dragTranslation / 8)
+
+                
+                
+                // Progress Bar
+                VStack(spacing: 8) {
+                    Slider(value: $vm.currentPlaybackTime, in: 0...currentAudio.duration) { editing in
+                        if !editing {
+                            vm.seekToTime(vm.currentPlaybackTime)
+                        }
+                    }
+                    .scaleEffect(CGFloat(1-(dragTranslation / 1000)))
+                    
+                    HStack {
+                        Text(formatDuration(vm.currentPlaybackTime))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .scaleEffect(CGFloat(1-(dragTranslation / 1000)))
+
+                        
+                        Spacer()
+                        
+                        Text(formatDuration(currentAudio.duration))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .scaleEffect(CGFloat(1-(dragTranslation / 1000)))
+
+                    }
                 }
-                .frame(width: 50, height: 50)
+                .padding(.horizontal)
+                
+                // Playback Controls
+                HStack(spacing: 40) {
+                    Button(action: vm.playPrevious) {
+                        Image(systemName: "backward.fill")
+                            .font(.title)
+                            .foregroundColor(.black)
+                            .scaleEffect(CGFloat(1-(dragTranslation / 1000)))
+
+                    }
+
+                    
+                    Button(action: {
+                        if vm.isPlaying {
+                            vm.pause()
+                        } else {
+                            vm.resume()
+                        }
+                    }) {
+                        Image(systemName: vm.isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                            .font(.system(size: 60))
+                            .foregroundColor(.black)
+                            .scaleEffect(CGFloat(1-(dragTranslation / 1000)))
+                    }
+                    
+                    Button(action: vm.playNext) {
+                        Image(systemName: "forward.fill")
+                            .font(.title)
+                            .foregroundColor(.black)
+                            .scaleEffect(CGFloat(1-(dragTranslation / 1000)))
+                    }
+                }
+                
+                // Loop Button
+                Button(action: vm.toggleLoop) {
+                    Image(systemName: "repeat")
+                        .font(.title2)
+                        .foregroundColor(vm.isLooping ? .black : .gray)
+                        .scaleEffect(CGFloat(1-(dragTranslation / 1000)))
+                }
+                
+            } else {
+                Text("No audio playing")
+                    .font(.title2)
+                    .foregroundColor(.secondary)
             }
-            .padding(.trailing)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(.white)
+        .shadow(color: .gray.opacity(0.4), radius: 10, x: 0, y: -4)
+        .offset(y: dragTranslation)
+        
+        .gesture (
+            DragGesture()
+                .onChanged { value in
+                    dragStartTime = dragStartTime ?? Date()
+                    if value.translation.height > 0 { // only down drag
+                        withAnimation(.smooth) {
+                            dragTranslation = value.translation.height
+                        }
+                    }
+                }
+            
+                .onEnded { value in
+                    let dragEndTime = Date()
+                    let dragDuration = dragEndTime.timeIntervalSince(dragStartTime ?? dragEndTime)
+                    
+                    let totalTranslation = value.translation.height
+                    let velocity = dragDuration > 0 ? totalTranslation / CGFloat(dragDuration) : 0
+                    
+                    print("Velocity: \(velocity), Translation: \(totalTranslation)")
+                    
+                    let velocityThreshold: CGFloat = 1500
+                    let distanceThreshold: CGFloat = 300
+                    
+                    if totalTranslation > distanceThreshold || velocity > velocityThreshold {
+                        withAnimation(.smooth) {
+                            showCurrentPlayingDetail.toggle()
+                        }
+                    }
+                    
+                    // Reset
+                    dragStartTime = nil
+                    withAnimation(.smooth) {
+                        dragTranslation = 0
+                    }
+                }
+        )
+    }
+    
+    
+    private var collapsedFloatingCurrentMusicView: some View {
+        ZStack {
+            Color.white
+                .onTapGesture {
+                    withAnimation(.smooth) {
+                        showCurrentPlayingDetail.toggle()
+                    }
+                }
+            HStack {
+                Image(systemName: "music.note")
+                    .matchedGeometryEffect(id: IDForMatchedGeometry.image, in: animation)
+                    .font(.system(size: 30))
+                    .foregroundColor(.black)
+                    .frame(width: 50, height: 50)
+                    .background(Color.gray.opacity(0.2))
+                    .cornerRadius(10)
+                    .padding(.horizontal)
+                
+                
+                Text(vm.currentAudio?.title ?? "No Music")
+                    .matchedGeometryEffect(id: IDForMatchedGeometry.title, in: animation)
+                    .font(.system(size: 14))
+                    .lineLimit(1)
+                
+                
+                Spacer()
+                
+                HStack(spacing: 0) {
+                    Button {
+                        print("Clicked")
+                        if vm.isPlaying {
+                            vm.pause()
+                        } else {
+                            vm.resume()
+                        }
+                    } label: {
+                        Image(systemName: vm.isPlaying ? "pause.fill" : "play.fill")
+                            .font(.system(size: 20))
+                            .frame(width: 60)
+                            .frame(maxHeight: .infinity)
+                    }
+
+                    
+                    Button {
+                        vm.playNext()
+                    } label: {
+                        Image(systemName: "forward.fill")
+                            .font(.system(size: 20))
+                            .frame(width: 60)
+                            .frame(maxHeight: .infinity)
+                    }
+                }
+                .padding(.trailing)
 
 
+            }
         }
         .frame(maxWidth: .infinity)
         .frame(height: 70)
@@ -119,9 +301,17 @@ struct FloatingCurrentMusicView: View {
         .padding(.horizontal, 10)
         .padding(.bottom, 70)
         .foregroundStyle(.black)
-        .shadow(color: .gray.opacity(0.5), radius: 5, x: 2, y: 10)
+        .shadow(color: .gray.opacity(0.4), radius:  10, x: 0, y: 0)
 
     }
+    
+    
+    private func formatDuration(_ duration: TimeInterval) -> String {
+        let minutes = Int(duration) / 60
+        let seconds = Int(duration) % 60
+        return String(format: "%d:%02d", minutes, seconds)
+    }
+
 }
 
 
