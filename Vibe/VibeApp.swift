@@ -6,12 +6,41 @@
 //
 
 import SwiftUI
+import SwiftData
 
 @main
 struct VibeApp: App {
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
+    
+    private let container: ContainerProtocol
+    
+    init() {
+        let schema = Schema([
+            DownloadedAudio.self,
+        ])
+        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+        
+        do {
+            let container = try ModelContainer(for: schema, configurations: [modelConfiguration])
+            self.container = DepedencyContainer(modelContainer: container)
+        } catch {
+            fatalError("Could not create ModelContainer: \(error)")
         }
     }
+
+    
+    var body: some Scene {
+        WindowGroup {
+            
+            MainTabView(
+                savedAudioUseCase: container.savedAudioUseCase,
+                audioPlayerUseCase: container.audioPlayerUseCase,
+                youtubeDownloaderUseCase: container.youtubeDownloaderUseCase,
+                youtubeVideoSearchUseCase: container.youtubeVideoSearchUseCase
+            )
+                .injectDependencies(container)
+        }
+        .modelContainer(container.modelContext.container)
+    }
 }
+
+
