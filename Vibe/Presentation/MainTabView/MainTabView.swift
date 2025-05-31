@@ -18,12 +18,13 @@ struct MainTabView: View {
     init(
         savedAudioUseCase: SavedAudioUseCase,
         audioPlayerUseCase: AudioPlayerUseCase,
-        youtubeDownloaderUseCase: YoutubeDownloaderUseCase
+        youtubeDownloaderUseCase: YoutubeDownloaderUseCase,
+        youtubeVideoSearchUseCase: YoutubeVideoSearchUseCase
     ) {
         self.savedAudioUseCase = savedAudioUseCase
         self.audioPlayerUseCase = audioPlayerUseCase
         
-        _vm = .init(wrappedValue: MainTabViewModel(youtubeDownloaderUseCase: youtubeDownloaderUseCase, savedAudioUseCase: savedAudioUseCase, audioPlayerUseCase: audioPlayerUseCase))
+        _vm = .init(wrappedValue: MainTabViewModel(youtubeDownloaderUseCase: youtubeDownloaderUseCase, savedAudioUseCase: savedAudioUseCase, audioPlayerUseCase: audioPlayerUseCase, youtubeVideoSearchUseCase: youtubeVideoSearchUseCase))
     }
     
     var body: some View {
@@ -32,7 +33,8 @@ struct MainTabView: View {
                 NavigationStack {
                     SavedAudiosView(
                         savedAudioUseCase: savedAudioUseCase,
-                        audioPlayerUseCase: audioPlayerUseCase
+                        audioPlayerUseCase: audioPlayerUseCase,
+                        downloadingProcesses: $vm.downloadingProcesses
                     )
                 }
                 .tabItem {
@@ -40,11 +42,16 @@ struct MainTabView: View {
                 }
                 .tag(0)
                 
-                SearchAndDownloadView(youtubeURL: $vm.youtubeURL, downloadingProcesses: $vm.downloadingProcesses) { fileName in
+                SearchAndDownloadView(keyWord: $vm.keyword, searchResults: $vm.searchResults, download: { fileName in
                     Task {
-                        await vm.downloadAndSave(fileName: fileName, youtubeURL: vm.youtubeURL)
+                        await vm.downloadAndSave(fileName: fileName, keyword: vm.keyword)
                     }
-                }
+                }, search: {
+                    Task {
+                        await vm.search()
+                    }
+                },showingFloatingPanel: vm.currentAudio != nil
+                )
                 .tabItem {
                     Label("Search", systemImage: "magnifyingglass")
                 }
@@ -65,5 +72,5 @@ struct MainTabView: View {
 #Preview {
     @Previewable
     @Environment(\.container) var container
-    MainTabView(savedAudioUseCase: container.savedAudioUseCase, audioPlayerUseCase: container.audioPlayerUseCase, youtubeDownloaderUseCase: container.youtubeDownloaderUseCase)
+    MainTabView(savedAudioUseCase: container.savedAudioUseCase, audioPlayerUseCase: container.audioPlayerUseCase, youtubeDownloaderUseCase: container.youtubeDownloaderUseCase, youtubeVideoSearchUseCase: container.youtubeVideoSearchUseCase)
 }

@@ -53,6 +53,8 @@ final class YoutubeVideoRepoImpl: YoutubeRepository {
             print(rawString)
             return []
         }
+        print(rawString)
+
         
         let decoder = JSONDecoder()
         let youtubeVideoSearchResponse = try decoder.decode(YoutubeSearchResponse.self, from: data)

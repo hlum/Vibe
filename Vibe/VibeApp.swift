@@ -33,7 +33,9 @@ struct VibeApp: App {
             
             MainTabView(
                 savedAudioUseCase: container.savedAudioUseCase,
-                audioPlayerUseCase: container.audioPlayerUseCase, youtubeDownloaderUseCase: container.youtubeDownloaderUseCase
+                audioPlayerUseCase: container.audioPlayerUseCase,
+                youtubeDownloaderUseCase: container.youtubeDownloaderUseCase,
+                youtubeVideoSearchUseCase: container.youtubeVideoSearchUseCase
             )
                 .injectDependencies(container)
         }

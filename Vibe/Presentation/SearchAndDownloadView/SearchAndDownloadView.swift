@@ -7,62 +7,110 @@
 
 import SwiftUI
 
+
 struct SearchAndDownloadView: View {
     @State private var showFileNameInputAlert: Bool = false
     @State private var fileName: String = ""
-    @Binding var youtubeURL: String
-    @Binding var downloadingProcesses: [DownloadingProcess]
+    @Binding var keyWord: String
+    @Binding var searchResults: [YoutubeSearchItem]
+    
     
     let download: (_ fileName: String) -> Void
+    let search: () -> Void
+    
+    let showingFloatingPanel: Bool
+
+    
     var body: some View {
         VStack {
-            TextField("Input youtube url", text: $youtubeURL)
+            let keyWordIsURL = URL(string: keyWord.trimmingCharacters(in: .whitespacesAndNewlines))?.scheme?.hasPrefix("http") == true
+
+            TextField("Input youtube url", text: $keyWord)
                 .padding()
                 .frame(maxWidth: .infinity)
                 .frame(height: 55)
                 .background(.gray.opacity(0.2))
                 .cornerRadius(10)
-                .padding()
-                .padding(.bottom, 20)
-            
-            Button {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                    showFileNameInputAlert.toggle()
-                }
-            } label: {
-                Text("Download")
-                    .font(.headline)
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 55)
-                    .background(.blue)
-                    .cornerRadius(10)
-                    .padding()
-                    .foregroundStyle(.white)
-            }
-
-            
-            ScrollView {
-                ForEach(downloadingProcesses) { process in
-                    VStack(alignment: .leading, spacing: 20) {
-                        Text(process.fileName)
-                            .font(.headline)
-                        HStack {
-                            ProgressView(value: process.progress)
-                            Text("\(process.progress * 100, specifier: "%.1f") %")
+                .overlay(alignment: .trailing) {
+                    if keyWordIsURL {
+                        ZStack {
+                            Button {
+                                showFileNameInputAlert = true
+                            } label: {
+                                Image(systemName: "arrow.down.circle.fill")
+                                    .font(.title)
+                                    .tint(.white)
+                            }
                         }
-//                        let text = "\(process.expectedByte/1024, specifier: "%.1f")mb"
-                        Text("\(process.finishedByte/102400 , specifier: "%.1f")mb")
-                        Text("\(process.expectedByte/102400 , specifier: "%.1f")mb")
+                        .frame(width: 40, height: 40)
+                        .background(.blue)
+                        .cornerRadius(30)
+                        .shadow(color: .gray.opacity(0.9), radius: 4, x: 0, y: 0)
+                        .padding(.trailing)
+                        
+                    } else {
+                        if !keyWord.isEmpty {
+                            Button {
+                                keyWord = ""
+                            } label: {
+                                Image(systemName: "x.circle")
+                                    .font(.headline)
+                                    .tint(.red)
+                                    .padding(.trailing)
+                                    .frame(width: 50, height: 50)
+                            }
 
+                        }
                     }
+                }
+                .onSubmit {
+                    search()
+                }
+                .padding()
                     
-                    .frame(minHeight: 55)
-                    .padding()
-                    
+            ScrollView {
+                ForEach(searchResults, id: \.id.videoId) { result in
+                    HStack {
+                        AsyncImage(url: URL(string: result.snippet.thumbnail.medium.url), content: { image in
+                            image
+                                .resizable()
+                                .scaledToFit()
+                        }, placeholder: {
+                            ProgressView()
+                                .progressViewStyle(.circular)
+                        })
+                        .frame(width: 80, height: 80)
+                        .cornerRadius(10)
+                        .padding(.horizontal)
+                        VStack {
+                            Text(result.snippet.title)
+                        }
+                        
+                        Spacer()
+                        
+                        Button {
+                            fileName = result.snippet.title
+                            showFileNameInputAlert.toggle()
+                            keyWord = result.id.getYoutubeURL()
+                        } label: {
+                            ZStack {
+                                Image(systemName: "arrow.down.circle.fill")
+                                    .font(.title)
+                                    .tint(.white)
+                            }
+                            .frame(width: 40, height: 40)
+                            .background(.blue)
+                            .cornerRadius(30)
+                            .shadow(color: .gray.opacity(0.9), radius: 4, x: 0, y: 0)
+                            .padding(.trailing, 20)
+                        }
+                        
+                    }
                     Divider()
                 }
             }
+            .padding(.bottom,showingFloatingPanel ? 100 : 0)
+
         }
         .overlay(alignment: .center) {
             if showFileNameInputAlert {
@@ -158,5 +206,5 @@ extension SearchAndDownloadView {
 }
 
 #Preview {
-    SearchAndDownloadView(youtubeURL: .constant(""), downloadingProcesses: .constant(DownloadingProcess.dummyData()), download: {fileName in })
+    SearchAndDownloadView(keyWord: .constant("asd"), searchResults: .constant(YoutubeSearchItem.getDummyItems()), download: {fileName in },search: {}, showingFloatingPanel: false)
 }

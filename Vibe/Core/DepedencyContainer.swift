@@ -20,6 +20,7 @@ protocol ContainerProtocol {
     var savedAudioUseCase: SavedAudioUseCase { get }
     var youtubeDownloaderUseCase: YoutubeDownloaderUseCase { get }
     var audioPlayerUseCase: AudioPlayerUseCase { get }
+    var youtubeVideoSearchUseCase: YoutubeVideoSearchUseCase { get }
 }
 
 @MainActor
@@ -65,6 +66,10 @@ final class DepedencyContainer: ContainerProtocol {
     
     var audioPlayerUseCase: AudioPlayerUseCase {
         AudioPlayerUseCaseImpl(audioManager: audioManagerRepo, savedAudioUseCase: savedAudioUseCase)
+    }
+    
+    var youtubeVideoSearchUseCase: YoutubeVideoSearchUseCase {
+        YoutubeVideoSearchUseCaseImpl(youtubeRepo: youtubeRepo)
     }
     
 }

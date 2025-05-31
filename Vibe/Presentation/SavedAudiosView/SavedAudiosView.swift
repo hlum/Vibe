@@ -14,15 +14,25 @@ struct SavedAudiosView: View {
     @StateObject private var vm: SavedAudiosViewModel
     @Environment(\.container) private var container
     
-    init(savedAudioUseCase: SavedAudioUseCase, audioPlayerUseCase: AudioPlayerUseCase) {
+    @Binding var downloadingProcesses: [DownloadingProcess]
+    
+    init(
+        savedAudioUseCase: SavedAudioUseCase,
+        audioPlayerUseCase: AudioPlayerUseCase,
+        downloadingProcesses: Binding<[DownloadingProcess]>
+    ) {
         _vm = .init(wrappedValue: SavedAudiosViewModel(
             savedAudioUseCase: savedAudioUseCase,
             audioPlayerUseCase: audioPlayerUseCase
         ))
+        _downloadingProcesses = downloadingProcesses
     }
     
     var body: some View {
         List {
+            
+            DownloadingProcessView(downloadingProcesses: $downloadingProcesses)
+            
             ForEach(savedAudios) { audio in
                 AudioItemRow(
                     currentPlaybackTime: $vm.currentPlaybackTime,
@@ -113,5 +123,9 @@ struct AudioItemRow: View {
 #Preview {
     @Previewable
     @Environment(\.container) var container
-    SavedAudiosView(savedAudioUseCase: container.savedAudioUseCase, audioPlayerUseCase: container.audioPlayerUseCase)
+    SavedAudiosView(
+        savedAudioUseCase: container.savedAudioUseCase,
+        audioPlayerUseCase: container.audioPlayerUseCase,
+        downloadingProcesses: .constant(DownloadingProcess.dummyData())
+    )
 }
