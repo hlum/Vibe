@@ -107,6 +107,12 @@ final class AudioManager: NSObject, AudioManagerRepository, AVAudioPlayerDelegat
     func seek(to time: Double) {
         let targetTime = CMTime(seconds: time, preferredTimescale: 600)
         player?.seek(to: targetTime)
+        
+        // Update now playing info with new position
+        if var nowPlayingInfo = MPNowPlayingInfoCenter.default().nowPlayingInfo {
+            nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = time
+            MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
+        }
     }
     
     
