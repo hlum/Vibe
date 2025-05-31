@@ -25,7 +25,7 @@ struct SearchAndDownloadView: View {
         VStack {
             let keyWordIsURL = URL(string: keyWord.trimmingCharacters(in: .whitespacesAndNewlines))?.scheme?.hasPrefix("http") == true
 
-            TextField("Input youtube url", text: $keyWord)
+            TextField("Input keyword or url", text: $keyWord)
                 .padding()
                 .frame(maxWidth: .infinity)
                 .frame(height: 55)

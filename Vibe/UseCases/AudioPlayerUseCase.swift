@@ -230,11 +230,13 @@ final class AudioPlayerUseCaseImpl: AudioPlayerUseCase {
         commandCenter.changePlaybackPositionCommand.addTarget { [weak self] event in
             guard let self = self,
                         let positionEvent = event as? MPChangePlaybackPositionCommandEvent else {
+                print("Failed to cast event to MPChangePlaybackPositionCommandEvent")
                       return .commandFailed
                   }
             
             let newPosition = positionEvent.positionTime
             guard newPosition >= 0 else {
+                print("Failed newPosition < 0")
                        return .commandFailed
                    }
             

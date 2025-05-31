@@ -42,17 +42,18 @@ struct MainTabView: View {
                     Label("Saved", systemImage: "music.note.list")
                 }
                 .tag(0)
-                
-                SearchAndDownloadView(keyWord: $vm.keyword, searchResults: $vm.searchResults, download: { fileName in
-                    Task {
-                        await vm.downloadAndSave(fileName: fileName, keyword: vm.keyword)
-                    }
-                }, search: {
-                    Task {
-                        await vm.search()
-                    }
-                },showingFloatingPanel: vm.currentAudio != nil
-                )
+                NavigationStack {
+                    SearchAndDownloadView(keyWord: $vm.keyword, searchResults: $vm.searchResults, download: { fileName in
+                        Task {
+                            await vm.downloadAndSave(fileName: fileName, keyword: vm.keyword)
+                        }
+                    }, search: {
+                        Task {
+                            await vm.search()
+                        }
+                    },showingFloatingPanel: vm.currentAudio != nil
+                    )
+                }
                 .tabItem {
                     Label("Search", systemImage: "magnifyingglass")
                 }
