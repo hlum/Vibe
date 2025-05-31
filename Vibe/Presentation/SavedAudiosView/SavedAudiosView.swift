@@ -14,35 +14,50 @@ struct SavedAudiosView: View {
     @StateObject private var vm: SavedAudiosViewModel
     @Environment(\.container) private var container
     
-    init(savedAudioUseCase: SavedAudioUseCase, audioPlayerUseCase: AudioPlayerUseCase) {
+    @Binding var downloadingProcesses: [DownloadingProcess]
+    
+    let floatingPlayerIsPresented: Bool
+    
+    init(
+        savedAudioUseCase: SavedAudioUseCase,
+        audioPlayerUseCase: AudioPlayerUseCase,
+        downloadingProcesses: Binding<[DownloadingProcess]>,
+        floatingPlayerIsPresented: Bool
+    ) {
         _vm = .init(wrappedValue: SavedAudiosViewModel(
             savedAudioUseCase: savedAudioUseCase,
             audioPlayerUseCase: audioPlayerUseCase
         ))
+        _downloadingProcesses = downloadingProcesses
+        self.floatingPlayerIsPresented = floatingPlayerIsPresented
     }
     
     var body: some View {
         List {
+            if !downloadingProcesses.isEmpty {
+                DownloadingProcessView(downloadingProcesses: $downloadingProcesses)
+            }
+            
             ForEach(savedAudios) { audio in
-                AudioItemRow(
-                    currentPlaybackTime: $vm.currentPlaybackTime,
-                    audio: audio,
-                    isPlaying: vm.currentAudio?.id == audio.id && vm.isPlaying,
-                    
-                    onPlayPause: {
-                        if vm.currentAudio?.id == audio.id {
-                            if vm.isPlaying {
-                                vm.pauseAudio()
-                            } else {
-                                vm.resumeAudio()
-                            }
+                Button {
+                    if vm.currentAudio?.id == audio.id {
+                        if vm.isPlaying {
+                            vm.pauseAudio()
                         } else {
-                            vm.playAudio(audio)
+                            vm.resumeAudio()
                         }
+                    } else {
+                        vm.playAudio(audio)
                     }
-                )
-                .listRowInsets(EdgeInsets())
-                .listRowBackground(Color.clear)
+                    
+                } label: {
+                    AudioItemRow(
+                        currentPlaybackTime: $vm.currentPlaybackTime,
+                        audio: audio,
+                        isPlaying: vm.currentAudio?.id == audio.id && vm.isPlaying
+                    )
+                }
+                
                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                     Button {
                         Task {
@@ -53,10 +68,13 @@ struct SavedAudiosView: View {
                     }
                     .tint(.red)
                 }
+                
+                
             }
+            .navigationTitle("Saved Audios")
         }
+        .padding(.bottom, floatingPlayerIsPresented ? 100 : 0)
         .listStyle(.plain)
-        .navigationTitle("Saved Audios")
     }
 }
 
@@ -65,7 +83,6 @@ struct AudioItemRow: View {
     
     let audio: DownloadedAudio
     var isPlaying: Bool
-    var onPlayPause: () -> Void
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -73,6 +90,7 @@ struct AudioItemRow: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(audio.title)
                         .font(.headline)
+                        .foregroundStyle(.black)
                     
                     Text("Downloaded: \(formatDate(audio.downloadDate))")
                         .font(.caption)
@@ -86,13 +104,10 @@ struct AudioItemRow: View {
                 }
             }
             .padding(.horizontal)
-
+            
+            
         }
         .padding(.vertical, 8)
-        .background(Color(.systemBackground))
-        .onTapGesture {
-            onPlayPause()
-        }
     }
     
     private func formatDuration(_ duration: TimeInterval) -> String {
@@ -113,5 +128,9 @@ struct AudioItemRow: View {
 #Preview {
     @Previewable
     @Environment(\.container) var container
-    SavedAudiosView(savedAudioUseCase: container.savedAudioUseCase, audioPlayerUseCase: container.audioPlayerUseCase)
+    SavedAudiosView(
+        savedAudioUseCase: container.savedAudioUseCase,
+        audioPlayerUseCase: container.audioPlayerUseCase,
+        downloadingProcesses: .constant(DownloadingProcess.dummyData()), floatingPlayerIsPresented: false
+    )
 }

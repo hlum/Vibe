@@ -12,17 +12,25 @@ import SwiftData
 @MainActor
 final class MainTabViewModel: ObservableObject {
     @Published var downloadingProcesses: [DownloadingProcess] = []
-    @Published var youtubeURL: String = ""
+    @Published var keyword: String = ""
     @Published var currentAudio: DownloadedAudio?
+    @Published var searchResults: [YoutubeSearchItem] = []
     
-    var youtubeDownloaderUseCase: YoutubeDownloaderUseCase
-    var savedAudioUseCase: SavedAudioUseCase
-    var audioPlayerUseCase: AudioPlayerUseCase
+    private var youtubeDownloaderUseCase: YoutubeDownloaderUseCase
+    private var savedAudioUseCase: SavedAudioUseCase
+    private var audioPlayerUseCase: AudioPlayerUseCase
+    private var youtubeVideoSearchUseCase: YoutubeVideoSearchUseCase
     
-    init(youtubeDownloaderUseCase: YoutubeDownloaderUseCase, savedAudioUseCase: SavedAudioUseCase, audioPlayerUseCase: AudioPlayerUseCase) {
+    init(
+        youtubeDownloaderUseCase: YoutubeDownloaderUseCase,
+        savedAudioUseCase: SavedAudioUseCase,
+        audioPlayerUseCase: AudioPlayerUseCase,
+        youtubeVideoSearchUseCase: YoutubeVideoSearchUseCase
+    ) {
         self.youtubeDownloaderUseCase = youtubeDownloaderUseCase
         self.savedAudioUseCase = savedAudioUseCase
         self.audioPlayerUseCase = audioPlayerUseCase
+        self.youtubeVideoSearchUseCase = youtubeVideoSearchUseCase
         setupBinding()
     }
     
@@ -32,12 +40,21 @@ final class MainTabViewModel: ObservableObject {
             .assign(to: &$currentAudio)
         
     }
+    
+    
+    func search() async {
+        do {
+            self.searchResults = try await youtubeVideoSearchUseCase.search(keyword: keyword)
+        } catch {
+            print("Error searching youtube video: \(error.localizedDescription)")
+        }
+    }
 
     
     
-    func downloadAndSave(fileName: String, youtubeURL: String) async {
+    func downloadAndSave(fileName: String, keyword: String) async {
         do {
-            let localURL = await youtubeDownloaderUseCase.downloadAndGetLocalURL(fileName: fileName, youtubeLink: youtubeURL) { processes in
+            let localURL = await youtubeDownloaderUseCase.downloadAndGetLocalURL(fileName: fileName, youtubeLink: keyword) { processes in
                 DispatchQueue.main.async {
                     self.downloadingProcesses = processes
                 }
@@ -47,7 +64,7 @@ final class MainTabViewModel: ObservableObject {
             
             
             let duration = try await audioPlayerUseCase.getDuration(for: localURL)
-            let downloadedAudio = DownloadedAudio(title: fileName, originalURL: youtubeURL, duration: duration)
+            let downloadedAudio = DownloadedAudio(title: fileName, originalURL: keyword, duration: duration)
                 
             try await savedAudioUseCase.saveAudio(downloadedAudio)
             
