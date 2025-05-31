@@ -10,9 +10,7 @@ import AVFoundation
 import Combine
 import MediaPlayer
 
-
-
-final class AudioManager: NSObject, AudioManagerRepository, AVAudioPlayerDelegate  {
+class AudioManager: NSObject, AudioManagerRepository, AVAudioPlayerDelegate {
     
     // MARK: - Published Properties
     @Published private(set) var currentPlaybackTime: Double = 0
@@ -44,8 +42,14 @@ final class AudioManager: NSObject, AudioManagerRepository, AVAudioPlayerDelegat
         setupInterruptionHandling()
     }
     
-    // MARK: - Public Methods
-    
+    deinit {
+        stopCurrentPlayback()
+        NotificationCenter.default.removeObserver(self)
+    }
+}
+
+// MARK: - Public Methods
+extension AudioManager {
     func play(_ audio: DownloadedAudio) {
         stopCurrentPlayback()
         
@@ -63,10 +67,8 @@ final class AudioManager: NSObject, AudioManagerRepository, AVAudioPlayerDelegat
         let playerItem = AVPlayerItem(asset: asset)
         player = AVPlayer(playerItem: playerItem)
         
-        
         // Trim the void at the end
         playerItem.forwardPlaybackEndTime = CMTime(seconds: audio.duration, preferredTimescale: 600)
-        
         
         // Wait for the player item to be ready to play
         playerItem.addObserver(self, forKeyPath: "status", options: [.new], context: nil)
@@ -116,47 +118,16 @@ final class AudioManager: NSObject, AudioManagerRepository, AVAudioPlayerDelegat
         }
     }
     
-    
     func getAudioDuration(from url: URL) async throws -> Double {
         let player = try AVAudioPlayer(contentsOf: url)
         let duration = player.duration
         return duration
     }
-    
-    
-    func updateNowPlayingInfo(title: String, artist: String, duration: TimeInterval) {
-        var nowPlayingInfo = [String: Any]()
+}
 
-        nowPlayingInfo[MPMediaItemPropertyTitle] = title
-        nowPlayingInfo[MPMediaItemPropertyArtist] = artist
-        nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = duration
-        nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = 0
-        nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = 1.0 // 1.0 = playing, 0.0 = paused
-
-
-        MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
-    }
-    
-    override
-    func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
-        if keyPath == "status",
-           let playerItem = object as? AVPlayerItem {
-            switch playerItem.status {
-            case .readyToPlay:
-                print("Player item is ready to play")
-            case .failed:
-                print("Player item failed to load: \(String(describing: playerItem.error))")
-            case .unknown:
-                print("Player item status unknown")
-            @unknown default:
-                break
-            }
-        }
-    }
-    
-    // MARK: - Private Methods
-    
-    private func setupAudioSession() {
+// MARK: - Private Methods
+private extension AudioManager {
+    func setupAudioSession() {
         do {
             let session = AVAudioSession.sharedInstance()
             try session.setCategory(.playback, mode: .default, options: [.allowBluetooth, .allowBluetoothA2DP])
@@ -166,30 +137,30 @@ final class AudioManager: NSObject, AudioManagerRepository, AVAudioPlayerDelegat
         }
     }
     
-    private func setupTimeObserver() {
+    func setupTimeObserver() {
         let interval = CMTime(seconds: 0.1, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
         timeObserver = player?.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
             self?.currentPlaybackTime = time.seconds
         }
     }
     
-    private func setupPlaybackFinishedObserver() {
+    func setupPlaybackFinishedObserver() {
         guard let playerItem = player?.currentItem else { return }
-                
-                // Clear previous subscriptions
-                cancellables.removeAll()
-                
-                // Subscribe to playback completion using Combine
-                NotificationCenter.default
-                    .publisher(for: .AVPlayerItemDidPlayToEndTime, object: playerItem)
-                    .sink { [weak self] _ in
-                        self?.playbackFinished.send()
-                        self?.stopCurrentPlayback()
-                    }
-                    .store(in: &cancellables)
+        
+        // Clear previous subscriptions
+        cancellables.removeAll()
+        
+        // Subscribe to playback completion using Combine
+        NotificationCenter.default
+            .publisher(for: .AVPlayerItemDidPlayToEndTime, object: playerItem)
+            .sink { [weak self] _ in
+                self?.playbackFinished.send()
+                self?.stopCurrentPlayback()
+            }
+            .store(in: &cancellables)
     }
     
-    private func stopCurrentPlayback() {
+    func stopCurrentPlayback() {
         player?.pause()
         if let timeObserver = timeObserver {
             player?.removeTimeObserver(timeObserver)
@@ -199,16 +170,11 @@ final class AudioManager: NSObject, AudioManagerRepository, AVAudioPlayerDelegat
         currentPlaybackTime = 0
         isPlaying = false
     }
-    
-    
-    private func removeTimeObserver() {
-         if let timeObserver = timeObserver {
-             player?.removeTimeObserver(timeObserver)
-             self.timeObserver = nil
-         }
-     }
-    
-    private func setupInterruptionHandling() {
+}
+
+// MARK: - Interruption Handling
+private extension AudioManager {
+    func setupInterruptionHandling() {
         // 他のアプリから音声を再生した
         NotificationCenter.default.addObserver(
             self,
@@ -226,7 +192,7 @@ final class AudioManager: NSObject, AudioManagerRepository, AVAudioPlayerDelegat
         )
     }
     
-    @objc private func handleInterruption(notification: Notification) {
+    @objc func handleInterruption(notification: Notification) {
         guard let userInfo = notification.userInfo,
               let typeValue = userInfo[AVAudioSessionInterruptionTypeKey] as? UInt,
               let type = AVAudioSession.InterruptionType(rawValue: typeValue) else {
@@ -252,7 +218,7 @@ final class AudioManager: NSObject, AudioManagerRepository, AVAudioPlayerDelegat
         }
     }
     
-    @objc private func handleRouteChange(notification: Notification) {
+    @objc func handleRouteChange(notification: Notification) {
         guard let userInfo = notification.userInfo,
               let reasonValue = userInfo[AVAudioSessionRouteChangeReasonKey] as? UInt,
               let reason = AVAudioSession.RouteChangeReason(rawValue: reasonValue) else {
@@ -268,9 +234,39 @@ final class AudioManager: NSObject, AudioManagerRepository, AVAudioPlayerDelegat
             break
         }
     }
-    
-    deinit {
-        stopCurrentPlayback()
-        NotificationCenter.default.removeObserver(self)
+}
+
+// MARK: - KVO
+extension AudioManager {
+    override
+    func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
+        if keyPath == "status",
+           let playerItem = object as? AVPlayerItem {
+            switch playerItem.status {
+            case .readyToPlay:
+                print("Player item is ready to play")
+            case .failed:
+                print("Player item failed to load: \(String(describing: playerItem.error))")
+            case .unknown:
+                print("Player item status unknown")
+            @unknown default:
+                break
+            }
+        }
+    }
+}
+
+// MARK: - Now Playing Info
+private extension AudioManager {
+    func updateNowPlayingInfo(title: String, artist: String, duration: TimeInterval) {
+        var nowPlayingInfo = [String: Any]()
+
+        nowPlayingInfo[MPMediaItemPropertyTitle] = title
+        nowPlayingInfo[MPMediaItemPropertyArtist] = artist
+        nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = duration
+        nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = 0
+        nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = 1.0 // 1.0 = playing, 0.0 = paused
+
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
     }
 }
