@@ -34,7 +34,8 @@ struct MainTabView: View {
                     SavedAudiosView(
                         savedAudioUseCase: savedAudioUseCase,
                         audioPlayerUseCase: audioPlayerUseCase,
-                        downloadingProcesses: $vm.downloadingProcesses
+                        downloadingProcesses: $vm.downloadingProcesses,
+                        floatingPlayerIsPresented: vm.currentAudio != nil
                     )
                 }
                 .tabItem {
