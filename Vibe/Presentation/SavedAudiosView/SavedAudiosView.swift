@@ -82,9 +82,7 @@ struct AudioItemRow: View {
                 Spacer()
                 
                 if isPlaying {
-                    Image(systemName: "waveform.path.ecg")
-                        .scaleEffect(1.0 + CGFloat(currentPlaybackTime.truncatingRemainder(dividingBy: 1)) * 0.2)
-                        .animation(.easeInOut(duration: 0.5), value: currentPlaybackTime)
+                    MusicVisualizerView(width: 20, height: 20)
                 }
             }
             .padding(.horizontal)
