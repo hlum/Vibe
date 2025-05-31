@@ -41,6 +41,7 @@ final class AudioManager: NSObject, AudioManagerRepository, AVAudioPlayerDelegat
     init() {
         super.init()
         setupAudioSession()
+        setupInterruptionHandling()
     }
     
     // MARK: - Public Methods
@@ -136,7 +137,8 @@ final class AudioManager: NSObject, AudioManagerRepository, AVAudioPlayerDelegat
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
     }
     
-    override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
+    override
+    func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
         if keyPath == "status",
            let playerItem = object as? AVPlayerItem {
             switch playerItem.status {
@@ -156,8 +158,9 @@ final class AudioManager: NSObject, AudioManagerRepository, AVAudioPlayerDelegat
     
     private func setupAudioSession() {
         do {
-            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [])
-            try AVAudioSession.sharedInstance().setActive(true)
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.playback, mode: .default, options: [.allowBluetooth, .allowBluetoothA2DP])
+            try session.setActive(true)
         } catch {
             print("Failed to set up audio session: \(error.localizedDescription)")
         }
@@ -205,8 +208,69 @@ final class AudioManager: NSObject, AudioManagerRepository, AVAudioPlayerDelegat
          }
      }
     
+    private func setupInterruptionHandling() {
+        // 他のアプリから音声を再生した
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleInterruption),
+            name: AVAudioSession.interruptionNotification,
+            object: nil
+        )
+        
+        // ヘッドポンかスピーカが変わった、外された
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleRouteChange),
+            name: AVAudioSession.routeChangeNotification,
+            object: nil
+        )
+    }
+    
+    @objc private func handleInterruption(notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let typeValue = userInfo[AVAudioSessionInterruptionTypeKey] as? UInt,
+              let type = AVAudioSession.InterruptionType(rawValue: typeValue) else {
+            return
+        }
+        
+        switch type {
+        case .began:
+            // Interruption began, pause playback
+            print("Audio session interrupted")
+            pause()
+        case .ended:
+            guard let optionsValue = userInfo[AVAudioSessionInterruptionOptionKey] as? UInt else { return }
+            let options = AVAudioSession.InterruptionOptions(rawValue: optionsValue)
+            
+            if options.contains(.shouldResume) {
+                // Interruption ended, resume playback
+                print("Audio session interruption ended, resuming playback")
+                resume()
+            }
+        @unknown default:
+            break
+        }
+    }
+    
+    @objc private func handleRouteChange(notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let reasonValue = userInfo[AVAudioSessionRouteChangeReasonKey] as? UInt,
+              let reason = AVAudioSession.RouteChangeReason(rawValue: reasonValue) else {
+            return
+        }
+        
+        switch reason {
+        case .oldDeviceUnavailable:
+            // Headphones unplugged or bluetooth disconnected
+            print("Audio route changed: old device unavailable")
+            pause()
+        default:
+            break
+        }
+    }
     
     deinit {
         stopCurrentPlayback()
+        NotificationCenter.default.removeObserver(self)
     }
 }
