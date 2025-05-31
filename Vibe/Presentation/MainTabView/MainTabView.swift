@@ -27,35 +27,43 @@ struct MainTabView: View {
     }
     
     var body: some View {
-        TabView(selection: $selectedTab) {
-            SearchAndDownloadView(youtubeURL: $vm.youtubeURL, downloadingProcesses: $vm.downloadingProcesses) { fileName in
-                Task {
-                    await vm.downloadAndSave(fileName: fileName, youtubeURL: vm.youtubeURL)
+        ZStack {
+            TabView(selection: $selectedTab) {
+                NavigationStack {
+                    SavedAudiosView(
+                        savedAudioUseCase: savedAudioUseCase,
+                        audioPlayerUseCase: audioPlayerUseCase
+                    )
                 }
+                .tabItem {
+                    Label("Saved", systemImage: "music.note.list")
+                }
+                .tag(0)
+                
+                SearchAndDownloadView(youtubeURL: $vm.youtubeURL, downloadingProcesses: $vm.downloadingProcesses) { fileName in
+                    Task {
+                        await vm.downloadAndSave(fileName: fileName, youtubeURL: vm.youtubeURL)
+                    }
+                }
+                .tabItem {
+                    Label("Search", systemImage: "magnifyingglass")
+                }
+                .tag(1)
+               
+                
             }
-            .tabItem {
-                Label("Search", systemImage: "magnifyingglass")
-            }
-            .tag(0)
-            NavigationStack {
-                SavedAudiosView(
-                    savedAudioUseCase: savedAudioUseCase,
-                    audioPlayerUseCase: audioPlayerUseCase
-                )
-            }
-            .tabItem {
-                Label("Saved", systemImage: "music.note.list")
-            }
-            .tag(1)
             
-            NavigationStack {
-                CurrentPlayingView(audioPlayerUseCase: audioPlayerUseCase)
+            if vm.currentAudio != nil {
+                FloatingCurrentMusicView(audioPlayerUseCase: audioPlayerUseCase)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
             }
-            .tabItem {
-                Label("Now Playing", systemImage: "play.circle.fill")
-            }
-            .tag(2)
         }
     }
 }
 
+
+#Preview {
+    @Previewable
+    @Environment(\.container) var container
+    MainTabView(savedAudioUseCase: container.savedAudioUseCase, audioPlayerUseCase: container.audioPlayerUseCase, youtubeDownloaderUseCase: container.youtubeDownloaderUseCase)
+}

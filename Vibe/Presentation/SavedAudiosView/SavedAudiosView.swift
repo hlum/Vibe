@@ -25,10 +25,10 @@ struct SavedAudiosView: View {
         List {
             ForEach(savedAudios) { audio in
                 AudioItemRow(
+                    currentPlaybackTime: $vm.currentPlaybackTime,
                     audio: audio,
                     isPlaying: vm.currentAudio?.id == audio.id && vm.isPlaying,
-                    isLooping: $vm.isLooping,
-                    currentTime: $vm.currentPlaybackTime,
+                    
                     onPlayPause: {
                         if vm.currentAudio?.id == audio.id {
                             if vm.isPlaying {
@@ -39,13 +39,7 @@ struct SavedAudiosView: View {
                         } else {
                             vm.playAudio(audio)
                         }
-                    },
-                    onSeek: { time in
-                        vm.seekToTime(time)
-                    },
-                    onNext: vm.playNext,
-                    onPrevious: vm.playPrevious,
-                    onToggleLoop: vm.toggleLoop
+                    }
                 )
                 .listRowInsets(EdgeInsets())
                 .listRowBackground(Color.clear)
@@ -56,8 +50,8 @@ struct SavedAudiosView: View {
                         }
                     } label: {
                         Text("Delete")
-                            .foregroundStyle(.red)
                     }
+                    .tint(.red)
                 }
             }
         }
@@ -67,18 +61,11 @@ struct SavedAudiosView: View {
 }
 
 struct AudioItemRow: View {
-    @State private var isEditing = false
-    @State private var sliderValue: Double = 0
+    @Binding var currentPlaybackTime: Double
     
     let audio: DownloadedAudio
     var isPlaying: Bool
-    @Binding var isLooping: Bool
-    @Binding var currentTime: TimeInterval
     var onPlayPause: () -> Void
-    var onSeek: (TimeInterval) -> Void
-    var onNext: () -> Void
-    var onPrevious: () -> Void
-    var onToggleLoop: () -> Void
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -94,75 +81,17 @@ struct AudioItemRow: View {
                 
                 Spacer()
                 
-                Button(action: onPlayPause) {
-                    Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                        .font(.title)
-                        .foregroundColor(.blue)
+                if isPlaying {
+                    MusicVisualizerView(width: 20, height: 20)
                 }
-                .buttonStyle(.plain)
             }
             .padding(.horizontal)
-            
-            if isPlaying {
-                VStack(spacing: 8) {
-                    HStack(spacing: 20) {
-                        Button(action: onPrevious) {
-                            Image(systemName: "backward.fill")
-                                .font(.title2)
-                                .foregroundColor(.blue)
-                        }
-                        .buttonStyle(.plain)
-                        
-                        Button(action: onToggleLoop) {
-                            Image(systemName: isLooping ? "repeat.1" : "repeat")
-                                .font(.title2)
-                                .foregroundColor(isLooping ? .blue : .gray)
-                        }
-                        .buttonStyle(.plain)
-                        
-                        Button(action: onNext) {
-                            Image(systemName: "forward.fill")
-                                .font(.title2)
-                                .foregroundColor(.blue)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    .padding(.vertical, 4)
-                    
-                    Slider(value: Binding(get: {
-                        sliderValue
-                    }, set: { newValue in
-                        sliderValue = newValue
-                        currentTime = newValue
-                    }), in: 0...audio.duration) { editing in
-                        isEditing = editing
-                        if !editing {
-                            onSeek(sliderValue)
-                        }
-                    }
-                    .padding(.horizontal)
-                    
-                    HStack {
-                        Text(formatDuration(currentTime))
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        
-                        Spacer()
-                        
-                        Text(formatDuration(audio.duration))
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    .padding(.horizontal)
-                }
-            }
+
         }
         .padding(.vertical, 8)
         .background(Color(.systemBackground))
-        .onChange(of: currentTime) { _, newValue in
-            if !isEditing {
-                sliderValue = newValue
-            }
+        .onTapGesture {
+            onPlayPause()
         }
     }
     
@@ -181,3 +110,8 @@ struct AudioItemRow: View {
 }
 
 
+#Preview {
+    @Previewable
+    @Environment(\.container) var container
+    SavedAudiosView(savedAudioUseCase: container.savedAudioUseCase, audioPlayerUseCase: container.audioPlayerUseCase)
+}

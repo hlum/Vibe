@@ -9,9 +9,11 @@
 import SwiftUI
 import SwiftData
 
+@MainActor
 final class MainTabViewModel: ObservableObject {
     @Published var downloadingProcesses: [DownloadingProcess] = []
     @Published var youtubeURL: String = ""
+    @Published var currentAudio: DownloadedAudio?
     
     var youtubeDownloaderUseCase: YoutubeDownloaderUseCase
     var savedAudioUseCase: SavedAudioUseCase
@@ -21,7 +23,16 @@ final class MainTabViewModel: ObservableObject {
         self.youtubeDownloaderUseCase = youtubeDownloaderUseCase
         self.savedAudioUseCase = savedAudioUseCase
         self.audioPlayerUseCase = audioPlayerUseCase
+        setupBinding()
     }
+    
+    func setupBinding() {
+
+        audioPlayerUseCase.currentAudioPublisher
+            .assign(to: &$currentAudio)
+        
+    }
+
     
     
     func downloadAndSave(fileName: String, youtubeURL: String) async {

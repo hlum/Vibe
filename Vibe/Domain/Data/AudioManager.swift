@@ -159,7 +159,7 @@ final class AudioManager: NSObject, AudioManagerRepository, AVAudioPlayerDelegat
     }
     
     private func setupTimeObserver() {
-        let interval = CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+        let interval = CMTime(seconds: 0.1, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
         timeObserver = player?.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
             self?.currentPlaybackTime = time.seconds
         }
