@@ -31,7 +31,22 @@ class SwiftDataSavedAudioUseCaseImpl: SavedAudioUseCase {
     }
     
     func deleteAudio(_ audio: DownloadedAudio) async throws {
+        
+        let localURL = try getLocalPath(for: audio)
+        try FileManager.default.removeItem(at: localURL)
         try await repository.deleteDownloadedAudio(audio)
+    }
+    
+    private func getLocalPath(for audio: DownloadedAudio) throws -> URL {
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let fileURL = documentsPath.appendingPathComponent("\(audio.title).m4a")
+        
+        guard FileManager.default.fileExists(atPath: fileURL.path) else {
+            print("Audio file not found at path: \(fileURL.path)")
+            throw URLError(.fileDoesNotExist)
+        }
+        
+        return fileURL
     }
     
 }
