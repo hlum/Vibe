@@ -72,6 +72,7 @@ struct SavedAudiosView: View {
                 
             }
             .navigationTitle("Saved Audios")
+            .navigationBarTitleDisplayMode(.large)
         }
         .padding(.bottom, floatingPlayerIsPresented ? 100 : 0)
         .listStyle(.plain)
