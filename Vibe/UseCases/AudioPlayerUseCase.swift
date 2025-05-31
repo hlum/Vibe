@@ -22,6 +22,7 @@ protocol AudioPlayerUseCase {
     var currentAudioPublisher: AnyPublisher<DownloadedAudio?, Never> { get }
     var isLoopingPublisher: AnyPublisher<Bool, Never> { get }
     
+    func updatePlaylist()
     func getDuration(for url: URL) async throws -> Double
     func play(_ audio: DownloadedAudio)
     func pause()
@@ -93,6 +94,16 @@ final class AudioPlayerUseCaseImpl: AudioPlayerUseCase {
     
     
     private func setupPlaylist() {
+        Task {
+            do {
+                playlist = try await savedAudioUseCase.getSavedAudios()
+            } catch {
+                print("Error loading playlist: \(error.localizedDescription)")
+            }
+        }
+    }
+    
+    func updatePlaylist() {
         Task {
             do {
                 playlist = try await savedAudioUseCase.getSavedAudios()
