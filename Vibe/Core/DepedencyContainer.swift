@@ -15,6 +15,7 @@ protocol ContainerProtocol {
     var downloader: Downloader { get }
     var audioRepo: AudioDataRepository { get }
     var downloadableLinkConverter: DownloadableLinkConverter { get }
+    var youtubeRepo: YoutubeRepository { get }
     
     var savedAudioUseCase: SavedAudioUseCase { get }
     var youtubeDownloaderUseCase: YoutubeDownloaderUseCase { get }
@@ -40,6 +41,10 @@ final class DepedencyContainer: ContainerProtocol {
     
     var downloader: Downloader {
         FileDownloader()
+    }
+    
+    var youtubeRepo: YoutubeRepository {
+        YoutubeVideoRepoImpl()
     }
     
     var downloadableLinkConverter: DownloadableLinkConverter {
