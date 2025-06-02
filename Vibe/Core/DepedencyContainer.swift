@@ -78,7 +78,7 @@ final class DepedencyContainer: ContainerProtocol {
 private struct ContainerKey: @preconcurrency EnvironmentKey {
     @MainActor
     static let defaultValue: ContainerProtocol = DepedencyContainer(
-        modelContainer: try! ModelContainer(for: Schema([DownloadedAudio.self]))
+        modelContainer: try! ModelContainer(for: Schema([DownloadedAudio.self, Playlist.self]))
     )
 }
 
