@@ -15,4 +15,5 @@ protocol PlaylistRepository {
     
     func deletedPlaylist(_ playlist: Playlist) async throws
     func addPlaylist(_ playlist: Playlist) async throws
+    func addSong(_ playlist: Playlist, song: DownloadedAudio) async throws
 }
