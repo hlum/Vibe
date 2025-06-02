@@ -14,10 +14,14 @@ struct VibeApp: App {
     private let container: ContainerProtocol
     
     init() {
+        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        print(appSupport)
         let schema = Schema([
             DownloadedAudio.self,
         ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+        let modelConfiguration = ModelConfiguration(
+            schema: schema,
+            isStoredInMemoryOnly: false)
         
         do {
             let container = try ModelContainer(for: schema, configurations: [modelConfiguration])
@@ -27,6 +31,7 @@ struct VibeApp: App {
         }
     }
 
+
     
     var body: some Scene {
         WindowGroup {
@@ -35,7 +40,8 @@ struct VibeApp: App {
                 savedAudioUseCase: container.savedAudioUseCase,
                 audioPlayerUseCase: container.audioPlayerUseCase,
                 youtubeDownloaderUseCase: container.youtubeDownloaderUseCase,
-                youtubeVideoSearchUseCase: container.youtubeVideoSearchUseCase
+                youtubeVideoSearchUseCase: container.youtubeVideoSearchUseCase,
+                playlistUseCase: container.playlistUseCase
             )
                 .injectDependencies(container)
         }

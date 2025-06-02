@@ -22,6 +22,7 @@ protocol ContainerProtocol {
     var youtubeDownloaderUseCase: YoutubeDownloaderUseCase { get }
     var audioPlayerUseCase: AudioPlayerUseCase { get }
     var youtubeVideoSearchUseCase: YoutubeVideoSearchUseCase { get }
+    var playlistUseCase: PlaylistUseCase { get }
 }
 
 @MainActor
@@ -75,6 +76,10 @@ final class DepedencyContainer: ContainerProtocol {
     
     var youtubeVideoSearchUseCase: YoutubeVideoSearchUseCase {
         YoutubeVideoSearchUseCaseImpl(youtubeRepo: youtubeRepo)
+    }
+    
+    var playlistUseCase: PlaylistUseCase {
+        PlaylistUseCaseImpl(playlistRepository: playlistRepo)
     }
     
 }
