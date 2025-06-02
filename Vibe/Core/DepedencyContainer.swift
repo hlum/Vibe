@@ -16,11 +16,13 @@ protocol ContainerProtocol {
     var audioRepo: AudioDataRepository { get }
     var downloadableLinkConverter: DownloadableLinkConverter { get }
     var youtubeRepo: YoutubeRepository { get }
+    var playlistRepo: PlaylistRepository { get }
     
     var savedAudioUseCase: SavedAudioUseCase { get }
     var youtubeDownloaderUseCase: YoutubeDownloaderUseCase { get }
     var audioPlayerUseCase: AudioPlayerUseCase { get }
     var youtubeVideoSearchUseCase: YoutubeVideoSearchUseCase { get }
+    var playlistUseCase: PlaylistUseCase { get }
 }
 
 @MainActor
@@ -48,6 +50,10 @@ final class DepedencyContainer: ContainerProtocol {
         YoutubeVideoRepoImpl()
     }
     
+    var playlistRepo: PlaylistRepository {
+        SwiftDataPlaylistRepository(context: modelContext)
+    }
+    
     var downloadableLinkConverter: DownloadableLinkConverter {
         YoutubeDownloadableLinkConverter()
     }
@@ -72,13 +78,17 @@ final class DepedencyContainer: ContainerProtocol {
         YoutubeVideoSearchUseCaseImpl(youtubeRepo: youtubeRepo)
     }
     
+    var playlistUseCase: PlaylistUseCase {
+        PlaylistUseCaseImpl(playlistRepository: playlistRepo)
+    }
+    
 }
 
 
 private struct ContainerKey: @preconcurrency EnvironmentKey {
     @MainActor
     static let defaultValue: ContainerProtocol = DepedencyContainer(
-        modelContainer: try! ModelContainer(for: Schema([DownloadedAudio.self]))
+        modelContainer: try! ModelContainer(for: Schema([DownloadedAudio.self, Playlist.self]))
     )
 }
 

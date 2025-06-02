@@ -11,6 +11,7 @@ protocol SavedAudioUseCase {
     func saveAudio(_ downloadedAudio: DownloadedAudio) async throws
     func getSavedAudios() async throws -> [DownloadedAudio]
     func deleteAudio(_ audio: DownloadedAudio) async throws
+    func addToPlaylist(_ audio: DownloadedAudio, to playlist: Playlist) async 
 }
 
 
@@ -35,6 +36,15 @@ class SwiftDataSavedAudioUseCaseImpl: SavedAudioUseCase {
         let localURL = try getLocalPath(for: audio)
         try FileManager.default.removeItem(at: localURL)
         try await repository.deleteDownloadedAudio(audio)
+    }
+    
+    
+    func addToPlaylist(_ audio: DownloadedAudio, to playlist: Playlist) async {
+        do {
+            try await repository.addToPlaylist(audio, to: playlist)
+        } catch {
+            print("Error adding song to playlist: \(error.localizedDescription)")
+        }
     }
     
     private func getLocalPath(for audio: DownloadedAudio) throws -> URL {

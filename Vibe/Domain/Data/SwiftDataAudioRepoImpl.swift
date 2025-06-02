@@ -31,4 +31,10 @@ class SwiftDataAudioRepoImpl : AudioDataRepository {
         context.delete(downloadedAudio)
         try context.save()
     }
+    
+    
+    func addToPlaylist(_ audio: DownloadedAudio, to playlist: Playlist) throws {
+        audio.playlist.append(playlist)
+        try context.save()
+    }
 }

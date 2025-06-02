@@ -12,6 +12,7 @@ struct MainTabView: View {
     @State private var selectedTab = 0
     private let savedAudioUseCase: SavedAudioUseCase
     private let audioPlayerUseCase: AudioPlayerUseCase
+    private let playlistUseCase: PlaylistUseCase
     
     @StateObject private var vm: MainTabViewModel
     
@@ -19,10 +20,12 @@ struct MainTabView: View {
         savedAudioUseCase: SavedAudioUseCase,
         audioPlayerUseCase: AudioPlayerUseCase,
         youtubeDownloaderUseCase: YoutubeDownloaderUseCase,
-        youtubeVideoSearchUseCase: YoutubeVideoSearchUseCase
+        youtubeVideoSearchUseCase: YoutubeVideoSearchUseCase,
+        playlistUseCase: PlaylistUseCase
     ) {
         self.savedAudioUseCase = savedAudioUseCase
         self.audioPlayerUseCase = audioPlayerUseCase
+        self.playlistUseCase = playlistUseCase
         
         _vm = .init(wrappedValue: MainTabViewModel(youtubeDownloaderUseCase: youtubeDownloaderUseCase, savedAudioUseCase: savedAudioUseCase, audioPlayerUseCase: audioPlayerUseCase, youtubeVideoSearchUseCase: youtubeVideoSearchUseCase))
     }
@@ -33,7 +36,7 @@ struct MainTabView: View {
                 NavigationStack {
                     SavedAudiosView(
                         savedAudioUseCase: savedAudioUseCase,
-                        audioPlayerUseCase: audioPlayerUseCase,
+                        audioPlayerUseCase: audioPlayerUseCase, playlistUseCase: playlistUseCase,
                         downloadingProcesses: $vm.downloadingProcesses,
                         floatingPlayerIsPresented: vm.currentAudio != nil
                     )
@@ -74,5 +77,5 @@ struct MainTabView: View {
 #Preview {
     @Previewable
     @Environment(\.container) var container
-    MainTabView(savedAudioUseCase: container.savedAudioUseCase, audioPlayerUseCase: container.audioPlayerUseCase, youtubeDownloaderUseCase: container.youtubeDownloaderUseCase, youtubeVideoSearchUseCase: container.youtubeVideoSearchUseCase)
+    MainTabView(savedAudioUseCase: container.savedAudioUseCase, audioPlayerUseCase: container.audioPlayerUseCase, youtubeDownloaderUseCase: container.youtubeDownloaderUseCase, youtubeVideoSearchUseCase: container.youtubeVideoSearchUseCase, playlistUseCase: container.playlistUseCase)
 }
