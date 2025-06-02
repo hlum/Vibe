@@ -12,126 +12,116 @@ import AVFoundation
 struct SavedAudiosView: View {
     @Query private var savedAudios: [DownloadedAudio]
     @StateObject private var vm: SavedAudiosViewModel
-    @Environment(\.container) private var container
     
     @Binding var downloadingProcesses: [DownloadingProcess]
+    
+    @State private var showPlaylistAddAlert: Bool = false
+    
+    private let savedAudioUseCase: SavedAudioUseCase
+    private let audioPlayerUseCase: AudioPlayerUseCase
+    private let playlistUseCase: PlaylistUseCase
     
     let floatingPlayerIsPresented: Bool
     
     init(
         savedAudioUseCase: SavedAudioUseCase,
         audioPlayerUseCase: AudioPlayerUseCase,
+        playlistUseCase: PlaylistUseCase,
         downloadingProcesses: Binding<[DownloadingProcess]>,
         floatingPlayerIsPresented: Bool
     ) {
         _vm = .init(wrappedValue: SavedAudiosViewModel(
             savedAudioUseCase: savedAudioUseCase,
-            audioPlayerUseCase: audioPlayerUseCase
+            audioPlayerUseCase: audioPlayerUseCase,
+            playlistUseCase: playlistUseCase
         ))
+        self.savedAudioUseCase = savedAudioUseCase
+        self.audioPlayerUseCase = audioPlayerUseCase
+        self.playlistUseCase = playlistUseCase
+        
         _downloadingProcesses = downloadingProcesses
         self.floatingPlayerIsPresented = floatingPlayerIsPresented
     }
     
     var body: some View {
         List {
+            
             if !downloadingProcesses.isEmpty {
                 DownloadingProcessView(downloadingProcesses: $downloadingProcesses)
             }
             
-            ForEach(savedAudios) { audio in
-                Button {
-                    if vm.currentAudio?.id == audio.id {
-                        if vm.isPlaying {
-                            vm.pauseAudio()
-                        } else {
-                            vm.resumeAudio()
-                        }
-                    } else {
-                        vm.playAudio(audio)
-                    }
-                    
-                } label: {
-                    AudioItemRow(
-                        currentPlaybackTime: $vm.currentPlaybackTime,
-                        audio: audio,
-                        isPlaying: vm.currentAudio?.id == audio.id && vm.isPlaying
-                    )
-                }
-                
+            PlaylistItemView(
+                savedAudioUseCase: savedAudioUseCase,
+                audioPlayerUseCase: audioPlayerUseCase,
+                playlistUseCase: playlistUseCase
+            )
+            
+            ForEach(vm.playlists) { playlist in
+                PlaylistItemView(
+                    playlist: playlist,
+                    savedAudioUseCase: savedAudioUseCase,
+                    audioPlayerUseCase: audioPlayerUseCase,
+                    playlistUseCase: playlistUseCase
+                )
                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                     Button {
                         Task {
-                            await vm.delete(audio)
+                            await vm.deletePlaylist(playlist)
                         }
                     } label: {
                         Text("Delete")
                     }
                     .tint(.red)
                 }
-                
+            }
+            
+        }
+        .navigationTitle("Saved Audios")
+        .navigationBarTitleDisplayMode(.large)
+        
+        .toolbar(content: {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    showPlaylistAddAlert.toggle()
+                } label: {
+                    HStack {
+                        Image(systemName:"plus.circle")
+                        Text("Add Playlist")
+                    }
+                    .font(.headline)
+                }
                 
             }
-            .navigationTitle("Saved Audios")
-            .navigationBarTitleDisplayMode(.large)
+        })
+        .overlay(alignment: .center) {
+            if showPlaylistAddAlert {
+                CustomAlertView(present: $showPlaylistAddAlert, inputText: $vm.playlistName,title: "Enter playlist name" , placeholder: "Playlist name", confirmAction: {
+                    Task {
+                        await vm.addPlaylist()
+                    }
+                })
+            }
         }
         .padding(.bottom, floatingPlayerIsPresented ? 100 : 0)
+        .task {
+            await vm.getPlaylists()
+        }
         .listStyle(.plain)
+        
     }
 }
 
-struct AudioItemRow: View {
-    @Binding var currentPlaybackTime: Double
-    
-    let audio: DownloadedAudio
-    var isPlaying: Bool
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(audio.title)
-                        .font(.headline)
-                        .foregroundStyle(.black)
-                    
-                    Text("Downloaded: \(formatDate(audio.downloadDate))")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                
-                Spacer()
-                
-                if isPlaying {
-                    MusicVisualizerView(width: 20, height: 20)
-                }
-            }
-            .padding(.horizontal)
-            
-            
-        }
-        .padding(.vertical, 8)
-    }
-    
-    private func formatDuration(_ duration: TimeInterval) -> String {
-        let minutes = Int(duration) / 60
-        let seconds = Int(duration) % 60
-        return String(format: "%d:%02d", minutes, seconds)
-    }
-    
-    private func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        return formatter.string(from: date)
-    }
-}
+
 
 
 #Preview {
     @Previewable
     @Environment(\.container) var container
-    SavedAudiosView(
-        savedAudioUseCase: container.savedAudioUseCase,
-        audioPlayerUseCase: container.audioPlayerUseCase,
-        downloadingProcesses: .constant(DownloadingProcess.dummyData()), floatingPlayerIsPresented: false
-    )
+    NavigationStack {
+        SavedAudiosView(
+            savedAudioUseCase: container.savedAudioUseCase,
+            audioPlayerUseCase: container.audioPlayerUseCase, playlistUseCase: container.playlistUseCase,
+            downloadingProcesses: .constant(DownloadingProcess.dummyData()), floatingPlayerIsPresented: false
+        )
+    }
 }

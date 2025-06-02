@@ -12,19 +12,28 @@ import AVFoundation
 import Combine
 
 @MainActor
-final class SavedAudiosViewModel: ObservableObject {
+class SavedAudiosViewModel: ObservableObject {
+    @Published var playlistName: String = ""
     @Published var currentPlaybackTime: Double = 0
     @Published var isPlaying: Bool = false
     @Published var currentAudio: DownloadedAudio?
     @Published var isLooping: Bool = false
+    @Published var playlists: [Playlist] = []
     
     private let savedAudioUseCase: SavedAudioUseCase
     private let audioPlayerUseCase: AudioPlayerUseCase
+    private let playlistUseCase: PlaylistUseCase
+    
     private var cancellables = Set<AnyCancellable>()
     
-    init(savedAudioUseCase: SavedAudioUseCase, audioPlayerUseCase: AudioPlayerUseCase) {
+    init(
+        savedAudioUseCase: SavedAudioUseCase,
+        audioPlayerUseCase: AudioPlayerUseCase,
+        playlistUseCase: PlaylistUseCase
+    ) {
         self.savedAudioUseCase = savedAudioUseCase
         self.audioPlayerUseCase = audioPlayerUseCase
+        self.playlistUseCase = playlistUseCase
         
         setupBindings()
     }
@@ -92,5 +101,36 @@ final class SavedAudiosViewModel: ObservableObject {
         } catch {
             print("Error deleting audio: \(error.localizedDescription)")
         }
+    }
+}
+
+
+// MARK: Playlist stuffs
+extension SavedAudiosViewModel {
+    
+    
+    func getPlaylists() async {
+        self.playlists = await playlistUseCase.getAllPlaylists()
+    }
+    
+    
+    func addPlaylist() async {
+        guard !playlistName.isEmpty else { return }
+        
+        let newPlaylist = Playlist(name: playlistName, songs: [])
+        await playlistUseCase.addPlaylist(newPlaylist)
+        await self.getPlaylists()
+    }
+    
+    
+    func deletePlaylist(_ playlist: Playlist) async {
+        await playlistUseCase.deletePlaylist(playlist)
+        await self.getPlaylists()
+    }
+    
+    
+    func addSongToPlaylist(_ song: DownloadedAudio, _ playlist: Playlist) async {
+        await playlistUseCase.addSong(song, to: playlist)
+        await savedAudioUseCase.addToPlaylist(song, to: playlist)
     }
 }
