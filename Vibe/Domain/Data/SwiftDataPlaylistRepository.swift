@@ -39,4 +39,9 @@ class SwiftDataPlaylistRepository: PlaylistRepository {
         try context.save()
     }
     
+    func addSong(_ playlist: Playlist, song: DownloadedAudio) async throws {
+        playlist.songs.append(song)
+        try context.save()
+    }
+    
 }
