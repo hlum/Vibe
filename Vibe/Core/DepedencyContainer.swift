@@ -16,6 +16,7 @@ protocol ContainerProtocol {
     var audioRepo: AudioDataRepository { get }
     var downloadableLinkConverter: DownloadableLinkConverter { get }
     var youtubeRepo: YoutubeRepository { get }
+    var playlistRepo: PlaylistRepository { get }
     
     var savedAudioUseCase: SavedAudioUseCase { get }
     var youtubeDownloaderUseCase: YoutubeDownloaderUseCase { get }
@@ -46,6 +47,10 @@ final class DepedencyContainer: ContainerProtocol {
     
     var youtubeRepo: YoutubeRepository {
         YoutubeVideoRepoImpl()
+    }
+    
+    var playlistRepo: PlaylistRepository {
+        SwiftDataPlaylistRepository(context: modelContext)
     }
     
     var downloadableLinkConverter: DownloadableLinkConverter {
