@@ -97,7 +97,7 @@ class SavedAudiosViewModel: ObservableObject {
                 audioPlayerUseCase.stop()
             }
             try await savedAudioUseCase.deleteAudio(audio)
-            audioPlayerUseCase.updatePlaylist()
+            audioPlayerUseCase.updateAllSongsList()
         } catch {
             print("Error deleting audio: \(error.localizedDescription)")
         }

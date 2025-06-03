@@ -65,10 +65,10 @@ struct MainTabView: View {
                 
             }
             
-            if vm.currentAudio != nil {
-                FloatingCurrentMusicView(audioPlayerUseCase: audioPlayerUseCase)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-            }
+            FloatingCurrentMusicView(audioPlayerUseCase: audioPlayerUseCase)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                .opacity(vm.currentAudio != nil ? 1 : 0)
+            
         }
     }
 }

@@ -51,6 +51,7 @@ struct SavedAudiosView: View {
             }
             
             PlaylistItemView(
+                playlistType: .all,
                 savedAudioUseCase: savedAudioUseCase,
                 audioPlayerUseCase: audioPlayerUseCase,
                 playlistUseCase: playlistUseCase
@@ -58,7 +59,7 @@ struct SavedAudiosView: View {
             
             ForEach(vm.playlists) { playlist in
                 PlaylistItemView(
-                    playlist: playlist,
+                    playlistType: .playlist(playlist),
                     savedAudioUseCase: savedAudioUseCase,
                     audioPlayerUseCase: audioPlayerUseCase,
                     playlistUseCase: playlistUseCase

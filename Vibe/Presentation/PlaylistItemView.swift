@@ -29,7 +29,7 @@ final class PlaylistItemViewModel: ObservableObject {
     
     func fetchAllSongs() async {
         do {
-            self.allSongs = try await savedAudioUseCase.getSavedAudios()
+            self.allSongs = try await savedAudioUseCase.getSavedAudios(playlistType: .all)
         } catch {
             print("Error fetching all songs: \(error)")
         }
@@ -40,7 +40,7 @@ final class PlaylistItemViewModel: ObservableObject {
 
 struct PlaylistItemView: View {
     @StateObject private var vm: PlaylistItemViewModel
-    var playlist: Playlist?
+    var playlistType: PlaylistType
     var isNavigationLinkActive: Bool
     
     private var savedAudioUseCase: SavedAudioUseCase
@@ -48,13 +48,13 @@ struct PlaylistItemView: View {
     private var playlistUseCase: PlaylistUseCase
     
     init(
-        playlist: Playlist? = nil,
+        playlistType: PlaylistType,
         isNavigationLinkActive: Bool = true,
         savedAudioUseCase: SavedAudioUseCase,
         audioPlayerUseCase: AudioPlayerUseCase,
         playlistUseCase: PlaylistUseCase
     ) {
-        self.playlist = playlist
+        self.playlistType = playlistType
         self.isNavigationLinkActive = isNavigationLinkActive
         
         self.savedAudioUseCase = savedAudioUseCase
@@ -74,7 +74,7 @@ struct PlaylistItemView: View {
             if isNavigationLinkActive {
                 NavigationLink {
                     SongListView(
-                        songs: playlist?.songs ?? vm.allSongs,
+                        playListType: playlistType,
                         savedAudioUseCase: savedAudioUseCase,
                         audioPlayerUseCase: audioPlayerUseCase,
                         playlistUseCase: playlistUseCase
@@ -96,7 +96,7 @@ struct PlaylistItemView: View {
         HStack {
             Image(systemName: "music.note.list")
             VStack(alignment: .leading, spacing: 4) {
-                Text(playlist?.name ?? "All songs")
+                Text(playlistType.displayName)
                     .font(.headline)
                     .foregroundStyle(.black)
             }

@@ -67,7 +67,7 @@ final class MainTabViewModel: ObservableObject {
             let downloadedAudio = DownloadedAudio(title: fileName, originalURL: keyword, duration: duration)
                 
             try await savedAudioUseCase.saveAudio(downloadedAudio)
-            audioPlayerUseCase.updatePlaylist()
+            audioPlayerUseCase.updateAllSongsList()
             
         } catch {
             print("Error downloading: \(error.localizedDescription)")

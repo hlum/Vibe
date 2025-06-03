@@ -9,7 +9,7 @@ import Foundation
 
 protocol SavedAudioUseCase {
     func saveAudio(_ downloadedAudio: DownloadedAudio) async throws
-    func getSavedAudios() async throws -> [DownloadedAudio]
+    func getSavedAudios(playlistType: PlaylistType) async throws -> [DownloadedAudio]
     func deleteAudio(_ audio: DownloadedAudio) async throws
     func addToPlaylist(_ audio: DownloadedAudio, to playlist: Playlist) async 
 }
@@ -28,8 +28,19 @@ class SwiftDataSavedAudioUseCaseImpl: SavedAudioUseCase {
     }
     
     func getSavedAudios() async throws -> [DownloadedAudio] {
-        try await repository.fetchAllDownloadedAudio()
+        try await self.getSavedAudios(playlistType: .all)
     }
+    
+    func getSavedAudios(playlistType: PlaylistType) async throws -> [DownloadedAudio] {
+        switch playlistType {
+        case .all:
+            return try await repository.fetchAllDownloadedAudio()
+        case .playlist(let playlist):
+            let audios =  try await repository.fetchPlaylistSongs(playlist: playlist)
+            return audios
+        }
+    }
+    
     
     func deleteAudio(_ audio: DownloadedAudio) async throws {
         

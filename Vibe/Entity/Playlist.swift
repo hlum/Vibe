@@ -12,12 +12,27 @@ import SwiftData
 class Playlist {
     var id: String
     var name: String
-    var songs: [DownloadedAudio]
+    @Relationship(deleteRule: .nullify) var songs: [DownloadedAudio]
     
     
     init(id: String = UUID().uuidString, name: String, songs: [DownloadedAudio]) {
         self.id = id
         self.name = name
         self.songs = songs
+    }
+}
+
+
+enum PlaylistType: Equatable {
+    case all
+    case playlist(Playlist)
+    
+    var displayName: String {
+        switch self {
+        case .all:
+            return "All"
+        case .playlist(let playlist):
+            return playlist.name
+        }
     }
 }
