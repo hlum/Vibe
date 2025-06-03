@@ -47,9 +47,7 @@ final class SongListViewModel: ObservableObject {
     
     func loadSongsFromPlaylist() async {
         do {
-            print(playlistType.displayName + " playlist loaded")
             self.songsInPlaylist = try await savedAudioUseCase.getSavedAudios(playlistType: self.playlistType)
-            print(songsInPlaylist.count)
         } catch {
             print("Error loading songs from playlist: \(error.localizedDescription)")
         }
@@ -139,7 +137,6 @@ extension SongListViewModel {
     
     
     func addSongToPlaylist(_ song: DownloadedAudio, _ playlist: Playlist) async {
-        await playlistUseCase.addSong(song, to: playlist)
         await savedAudioUseCase.addToPlaylist(song, to: playlist)
     }
 }

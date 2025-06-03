@@ -37,7 +37,6 @@ class SwiftDataSavedAudioUseCaseImpl: SavedAudioUseCase {
             return try await repository.fetchAllDownloadedAudio()
         case .playlist(let playlist):
             let audios =  try await repository.fetchPlaylistSongs(playlist: playlist)
-            print(audios.count)
             return audios
         }
     }

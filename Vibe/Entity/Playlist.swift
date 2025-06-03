@@ -12,7 +12,7 @@ import SwiftData
 class Playlist {
     var id: String
     var name: String
-    var songs: [DownloadedAudio]
+    @Relationship(deleteRule: .nullify) var songs: [DownloadedAudio]
     
     
     init(id: String = UUID().uuidString, name: String, songs: [DownloadedAudio]) {

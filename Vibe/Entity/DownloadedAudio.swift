@@ -12,7 +12,7 @@ import SwiftData
 final class DownloadedAudio {
     var id: String
     var title: String
-    var playlist: [Playlist] = []
+    @Relationship(inverse: \Playlist.songs) var playlist: [Playlist] = []
     var originalURL: String
     var downloadDate: Date
     var duration: TimeInterval

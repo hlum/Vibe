@@ -125,7 +125,6 @@ final class AudioPlayerUseCaseImpl: AudioPlayerUseCase {
             do {
                 
                 try await currentPlaylistSongs = savedAudioUseCase.getSavedAudios(playlistType: playlistType)
-                currentPlaylistSongs.forEach { print($0.title) }
             } catch {
                 print("Error updating currentPlaylist songs. \(error.localizedDescription)")
             }
