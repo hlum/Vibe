@@ -21,3 +21,18 @@ class Playlist {
         self.songs = songs
     }
 }
+
+
+enum PlaylistType: Equatable {
+    case all
+    case playlist(Playlist)
+    
+    var displayName: String {
+        switch self {
+        case .all:
+            return "All"
+        case .playlist(let playlist):
+            return playlist.name
+        }
+    }
+}
