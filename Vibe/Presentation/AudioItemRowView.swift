@@ -19,7 +19,7 @@ struct AudioItemRow: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(audio.title)
                         .font(.headline)
-                        .foregroundStyle(.black)
+                        .foregroundStyle(.dartkModeBlack)
                     
                     Text("Downloaded: \(formatDate(audio.downloadDate))")
                         .font(.caption)

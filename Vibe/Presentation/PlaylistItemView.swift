@@ -95,15 +95,14 @@ struct PlaylistItemView: View {
     private var itemView: some View {
         HStack {
             Image(systemName: "music.note.list")
-            VStack(alignment: .leading, spacing: 4) {
-                Text(playlistType.displayName)
-                    .font(.headline)
-                    .foregroundStyle(.black)
-            }
+            Text(playlistType.displayName)
+                .font(.headline)
+                .foregroundStyle(.dartkModeBlack)
             
             Spacer()
             
         }
+        .background(.darkModeWhite)
         .padding(.horizontal)
     }
 }

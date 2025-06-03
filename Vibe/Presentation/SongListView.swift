@@ -142,7 +142,6 @@ extension SongListViewModel {
 }
 
 struct SongListView: View {
-
     @State private var selectedSongToAddToPlaylist: DownloadedAudio? = nil
     @StateObject private var vm: SongListViewModel
     
@@ -177,16 +176,15 @@ struct SongListView: View {
                     )
                 }
                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                    
                     Button {
                         Task {
                             await vm.delete(audio)
+                            await vm.loadSongsFromPlaylist()
                         }
                     } label: {
                         Text("Delete")
                     }
                     .tint(.red)
-                    
                     
                     Button {
                         selectedSongToAddToPlaylist = audio
@@ -194,21 +192,13 @@ struct SongListView: View {
                         Image(systemName: "text.badge.plus")
                     }
                     .tint(.green)
-
                 }
             }
-            .sheet(
-                item: $selectedSongToAddToPlaylist,content: { song in
-                    playListSelectionSheet(song: song)
-                })
         }
         .listStyle(.plain)
-                    
-                    
-        
-        
-        
-
+        .sheet(item: $selectedSongToAddToPlaylist) { song in
+            playListSelectionSheet(song: song)
+        }
     }
 }
 
