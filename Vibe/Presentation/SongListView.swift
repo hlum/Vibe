@@ -179,6 +179,7 @@ struct SongListView: View {
                     Button {
                         Task {
                             await vm.delete(audio)
+                            await vm.loadSongsFromPlaylist()
                         }
                     } label: {
                         Text("Delete")

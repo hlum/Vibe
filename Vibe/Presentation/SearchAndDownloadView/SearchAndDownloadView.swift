@@ -32,39 +32,22 @@ struct SearchAndDownloadView: View {
                 .background(.gray.opacity(0.2))
                 .cornerRadius(10)
                 .overlay(alignment: .trailing) {
-                    if keyWordIsURL {
-                        ZStack {
-                            Button {
-                                showFileNameInputAlert = true
-                            } label: {
-                                Image(systemName: "arrow.down.circle.fill")
-                                    .font(.title)
-                                    .tint(.white)
-                            }
-                        }
-                        .frame(width: 40, height: 40)
-                        .background(.blue)
-                        .cornerRadius(30)
-                        .shadow(color: .gray.opacity(0.9), radius: 4, x: 0, y: 0)
-                        .padding(.trailing)
-                        
-                    } else {
-                        if !keyWord.isEmpty {
-                            Button {
-                                keyWord = ""
-                            } label: {
-                                Image(systemName: "x.circle")
-                                    .font(.headline)
-                                    .tint(.red)
-                                    .padding(.trailing)
-                                    .frame(width: 50, height: 50)
-                            }
-
+                    if !keyWord.isEmpty {
+                        Button {
+                            keyWord = ""
+                        } label: {
+                            Image(systemName: "x.circle")
+                                .font(.headline)
+                                .tint(.red)
+                                .padding(.trailing)
+                                .frame(width: 50, height: 50)
                         }
                     }
                 }
                 .onSubmit {
-                    search()
+                    if !keyWord.isEmpty {
+                        search()
+                    }
                 }
                 .padding()
                     

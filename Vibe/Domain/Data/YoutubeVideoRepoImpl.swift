@@ -31,7 +31,7 @@ final class YoutubeVideoRepoImpl: YoutubeRepository {
             URLQueryItem(name: "part", value: "snippet"),
             URLQueryItem(name: "q", value: searchWord),
             URLQueryItem(name: "type", value: "video"),
-            URLQueryItem(name: "maxResults", value: "10"),
+            URLQueryItem(name: "maxResults", value: "30"),
             URLQueryItem(name: "key", value: apiKey)
         ]
         
