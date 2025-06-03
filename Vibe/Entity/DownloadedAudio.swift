@@ -10,7 +10,7 @@ import SwiftData
 
 @Model
 final class DownloadedAudio {
-    var id: UUID
+    var id: String
     var title: String
     var playlist: [Playlist] = []
     var originalURL: String
@@ -18,7 +18,7 @@ final class DownloadedAudio {
     var duration: TimeInterval
     
     init(title: String, originalURL: String, duration: TimeInterval = 0, playlist: [Playlist] = []) {
-        self.id = UUID()
+        self.id = UUID().uuidString
         self.title = title
         self.originalURL = originalURL
         self.downloadDate = Date()
