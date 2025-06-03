@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import UIKit
 
 class FileDownloader: NSObject, URLSessionDownloadDelegate, Downloader {
     
@@ -16,6 +17,8 @@ class FileDownloader: NSObject, URLSessionDownloadDelegate, Downloader {
     private var progressHandler: ((Double, Int64, Int64) -> Void)?
     private var completionHandler: ((Result<URL, Error>) -> Void)?
     private var session: URLSession?
+    private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
+    private static var sessionCounter = 0
     
     func download(
         from url: URL,
@@ -26,7 +29,16 @@ class FileDownloader: NSObject, URLSessionDownloadDelegate, Downloader {
         self.progressHandler = progressHandler
         self.completionHandler = completionHandler
         
-        let configuration = URLSessionConfiguration.default
+        // Start background task
+        backgroundTask = UIApplication.shared.beginBackgroundTask { [weak self] in
+            self?.endBackgroundTask()
+        }
+        
+        // Create unique identifier for this download session
+        FileDownloader.sessionCounter += 1
+        let sessionIdentifier = "com.vibe.backgroundDownload.\(FileDownloader.sessionCounter)"
+        
+        let configuration = URLSessionConfiguration.background(withIdentifier: sessionIdentifier)
         configuration.timeoutIntervalForRequest = 60
         configuration.timeoutIntervalForResource = 3600
         configuration.waitsForConnectivity = true
@@ -36,7 +48,7 @@ class FileDownloader: NSObject, URLSessionDownloadDelegate, Downloader {
         
         session = URLSession(configuration: configuration, delegate: self, delegateQueue: .main)
         let task = session?.downloadTask(with: url)
-        print("FileDownloader: Created download task")
+        print("FileDownloader: Created download task with session identifier: \(sessionIdentifier)")
         task?.resume()
     }
     
@@ -69,9 +81,16 @@ class FileDownloader: NSObject, URLSessionDownloadDelegate, Downloader {
         }
     }
     
+    private func endBackgroundTask() {
+        if backgroundTask != .invalid {
+            UIApplication.shared.endBackgroundTask(backgroundTask)
+            backgroundTask = .invalid
+        }
+    }
     
     private func cleanup() {
         print("FileDownloader: Cleaning up resources")
+        endBackgroundTask()
         session?.invalidateAndCancel()
         session = nil
         progressHandler = nil
