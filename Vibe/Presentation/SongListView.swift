@@ -169,16 +169,6 @@ struct SongListView: View {
             ForEach(vm.songsInPlaylist) { audio in
                 Button {
                     vm.playAudio(audio)
-//                    if vm.currentAudio?.id == audio.id {
-//                        if vm.isPlaying {
-//                            vm.pauseAudio()
-//                        } else {
-//                            vm.resumeAudio()
-//                        }
-//                    } else {
-//                        vm.playAudio(audio)
-//                    }
-                    
                 } label: {
                     AudioItemRow(
                         currentPlaybackTime: $vm.currentPlaybackTime,
@@ -244,7 +234,6 @@ extension SongListView {
                             playlistUseCase: vm.playlistUseCase
                         )
                     }
-                    .buttonStyle(.plain)
                     
                 }
                 
