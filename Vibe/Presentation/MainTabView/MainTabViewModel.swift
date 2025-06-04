@@ -46,7 +46,11 @@ final class MainTabViewModel: ObservableObject {
         do {
             self.searchResults = try await youtubeVideoSearchUseCase.search(keyword: keyword)
         } catch {
-            print("Error searching youtube video: \(error.localizedDescription)")
+            if let decodingError = error as? DecodingError {
+                print("Decoding Error: \(decodingError.detailedDescription)")
+            } else {
+                print("Error searching youtube video: \(error.localizedDescription)")
+            }
         }
     }
 
