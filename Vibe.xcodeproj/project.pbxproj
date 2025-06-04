@@ -8,7 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		7F8B438C2DE6902D008B6DC3 /* YouTubeKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7F8B438B2DE6902D008B6DC3 /* YouTubeKit */; };
-		7FDAB71E2DF00F5300A41DBC /* MusicSlider in Frameworks */ = {isa = PBXBuildFile; productRef = 7FDAB71D2DF00F5300A41DBC /* MusicSlider */; };
+		7FDAB7212DF01A0000A41DBC /* MusicSlider in Frameworks */ = {isa = PBXBuildFile; productRef = 7FDAB7202DF01A0000A41DBC /* MusicSlider */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -42,7 +42,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				7F8B438C2DE6902D008B6DC3 /* YouTubeKit in Frameworks */,
-				7FDAB71E2DF00F5300A41DBC /* MusicSlider in Frameworks */,
+				7FDAB7212DF01A0000A41DBC /* MusicSlider in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -86,7 +86,7 @@
 			name = Vibe;
 			packageProductDependencies = (
 				7F8B438B2DE6902D008B6DC3 /* YouTubeKit */,
-				7FDAB71D2DF00F5300A41DBC /* MusicSlider */,
+				7FDAB7202DF01A0000A41DBC /* MusicSlider */,
 			);
 			productName = Vibe;
 			productReference = 7F8B43762DE68ED9008B6DC3 /* Vibe.app */;
@@ -118,7 +118,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				7F8B438A2DE6902D008B6DC3 /* XCRemoteSwiftPackageReference "YouTubeKit" */,
-				7FDAB71C2DF00F5300A41DBC /* XCRemoteSwiftPackageReference "Progress-bar---Slider-Custom-SwiftUI-View" */,
+				7FDAB71F2DF01A0000A41DBC /* XCRemoteSwiftPackageReference "Progress-bar---Slider-Custom-SwiftUI-View" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 7F8B43772DE68ED9008B6DC3 /* Products */;
@@ -370,9 +370,9 @@
 				minimumVersion = 0.2.7;
 			};
 		};
-		7FDAB71C2DF00F5300A41DBC /* XCRemoteSwiftPackageReference "Progress-bar---Slider-Custom-SwiftUI-View" */ = {
+		7FDAB71F2DF01A0000A41DBC /* XCRemoteSwiftPackageReference "Progress-bar---Slider-Custom-SwiftUI-View" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/hlum/Progress-bar---Slider-Custom-SwiftUI-View.git";
+			repositoryURL = "https://github.com/hlum/Progress-bar---Slider-Custom-SwiftUI-View";
 			requirement = {
 				branch = main;
 				kind = branch;
@@ -386,9 +386,9 @@
 			package = 7F8B438A2DE6902D008B6DC3 /* XCRemoteSwiftPackageReference "YouTubeKit" */;
 			productName = YouTubeKit;
 		};
-		7FDAB71D2DF00F5300A41DBC /* MusicSlider */ = {
+		7FDAB7202DF01A0000A41DBC /* MusicSlider */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 7FDAB71C2DF00F5300A41DBC /* XCRemoteSwiftPackageReference "Progress-bar---Slider-Custom-SwiftUI-View" */;
+			package = 7FDAB71F2DF01A0000A41DBC /* XCRemoteSwiftPackageReference "Progress-bar---Slider-Custom-SwiftUI-View" */;
 			productName = MusicSlider;
 		};
 /* End XCSwiftPackageProductDependency section */

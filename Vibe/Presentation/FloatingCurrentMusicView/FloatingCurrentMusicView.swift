@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Combine
+import MusicSlider
 
 enum IDForMatchedGeometry: Hashable {
     case image
@@ -71,10 +72,13 @@ struct FloatingCurrentMusicView: View {
     @StateObject private var vm: FloatingCurrentMusicViewModel
     @State private var showCurrentPlayingDetail: Bool = false
     
+    @State private var isSeeking: Bool = false
+    @State private var sliderHeight: CGFloat = 10
+    @State private var sliderValue: Double = 0
+    
     
     @State private var dragStartTime: Date?
     @State private var dragTranslation: CGFloat = 0
-    
     @Namespace private var animation
     
     init(audioPlayerUseCase: AudioPlayerUseCase) {
@@ -122,15 +126,41 @@ extension FloatingCurrentMusicView {
                 
                 // Progress Bar
                 VStack(spacing: 8) {
-                    Slider(value: $vm.currentPlaybackTime, in: 0...currentAudio.duration) { editing in
-                        if !editing {
-                            vm.seekToTime(vm.currentPlaybackTime)
-                        }
-                    }
-                    .scaleEffect(CGFloat(1-(dragTranslation / 1000)))
                     
+                    MusicSlider(
+                        value: $sliderValue,
+                        totalValue: currentAudio.duration,
+                        valueIndicatorColor: .black.opacity(0.7),
+                        heightOfSlider: $sliderHeight) {
+                            Circle().opacity(0.00001)
+                        } onChange: { value in
+                            isSeeking = true
+                            vm.currentPlaybackTime = value
+
+                            withAnimation(.spring(response: 0.3)) {
+                                sliderHeight = 20
+                            }
+                        } onEnded: { value in
+                            sliderValue = value
+                            vm.currentPlaybackTime = value
+                            withAnimation(.spring(response: 0.3)) {
+                                sliderHeight = 10
+                            }
+                            vm.seekToTime(vm.currentPlaybackTime)
+                            // Delay setting isSeeking to false
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                isSeeking = false
+                            }                        }
+                        .scaleEffect(CGFloat(1-(dragTranslation / 1000)))
+                        .onChange(of: vm.currentPlaybackTime) { _, newValue in
+                            if !isSeeking {
+                                self.sliderValue = newValue
+                            }
+                        }
+
+                                        
                     HStack {
-                        Text(formatDuration(vm.currentPlaybackTime))
+                        Text(formatDuration(self.sliderValue))
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .scaleEffect(CGFloat(1-(dragTranslation / 1000)))

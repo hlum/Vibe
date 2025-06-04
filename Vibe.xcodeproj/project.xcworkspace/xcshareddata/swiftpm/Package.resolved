@@ -1,13 +1,13 @@
 {
-  "originHash" : "abb31eb18982656500450c551541358a72f5b6b915927b74a2afd6391649398f",
+  "originHash" : "e081bb6d8ec29a5ccd64e0fce80ffd73cd6661304b6dfd4f5b074daf19eaf8bb",
   "pins" : [
     {
       "identity" : "progress-bar---slider-custom-swiftui-view",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/hlum/Progress-bar---Slider-Custom-SwiftUI-View.git",
+      "location" : "https://github.com/hlum/Progress-bar---Slider-Custom-SwiftUI-View",
       "state" : {
         "branch" : "main",
-        "revision" : "9a87ceab563185bd2c622d34cd75aaa1b3b093d2"
+        "revision" : "59f701e5ff3abfa8eed10b8711e1889c6c70ca30"
       }
     },
     {
