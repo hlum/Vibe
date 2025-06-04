@@ -9,7 +9,7 @@ import Foundation
 import SwiftData
 
 @MainActor
-class SwiftDataPlaylistRepository: PlaylistRepository {
+class SwiftDataPlaylistRepository: PlaylistRepository {    
     
     private let context: ModelContext
     
