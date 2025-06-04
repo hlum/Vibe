@@ -130,7 +130,6 @@ extension SavedAudiosViewModel {
     
     
     func addSongToPlaylist(_ song: DownloadedAudio, _ playlist: Playlist) async {
-        await playlistUseCase.addSong(song, to: playlist)
         await savedAudioUseCase.addToPlaylist(song, to: playlist)
     }
 }

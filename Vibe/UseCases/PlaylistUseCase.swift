@@ -11,7 +11,6 @@ protocol PlaylistUseCase {
     func addPlaylist(_ playlist: Playlist) async
     func getAllPlaylists() async -> [Playlist]
     func deletePlaylist(_ playlist: Playlist) async
-    func addSong(_ song: DownloadedAudio, to playlist: Playlist) async
 }
 
 class PlaylistUseCaseImpl: PlaylistUseCase {
@@ -46,14 +45,6 @@ class PlaylistUseCaseImpl: PlaylistUseCase {
             try await playlistRepository.deletedPlaylist(playlist)
         } catch {
             print("Error deleting playlist: \(error.localizedDescription)")
-        }
-    }
-    
-    func addSong(_ song: DownloadedAudio, to playlist: Playlist) async {
-        do {
-            try await playlistRepository.addSong(playlist, song: song)
-        } catch {
-            print("Error adding song to playlist: \(error.localizedDescription)")
         }
     }
 }
