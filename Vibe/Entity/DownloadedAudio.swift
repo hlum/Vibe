@@ -10,17 +10,19 @@ import SwiftData
 
 @Model
 final class DownloadedAudio {
-    var id: UUID
+    var id: String
     var title: String
+    @Relationship(inverse: \Playlist.songs) var playlist: [Playlist] = []
     var originalURL: String
     var downloadDate: Date
     var duration: TimeInterval
     
-    init(title: String, originalURL: String, duration: TimeInterval = 0) {
-        self.id = UUID()
+    init(title: String, originalURL: String, duration: TimeInterval = 0, playlist: [Playlist] = []) {
+        self.id = UUID().uuidString
         self.title = title
         self.originalURL = originalURL
         self.downloadDate = Date()
         self.duration = duration
+        self.playlist = playlist
     }
 }

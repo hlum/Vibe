@@ -31,7 +31,7 @@ final class YoutubeVideoRepoImpl: YoutubeRepository {
             URLQueryItem(name: "part", value: "snippet"),
             URLQueryItem(name: "q", value: searchWord),
             URLQueryItem(name: "type", value: "video"),
-            URLQueryItem(name: "maxResults", value: "10"),
+            URLQueryItem(name: "maxResults", value: "30"),
             URLQueryItem(name: "key", value: apiKey)
         ]
         
@@ -57,9 +57,32 @@ final class YoutubeVideoRepoImpl: YoutubeRepository {
 
         
         let decoder = JSONDecoder()
-        let youtubeVideoSearchResponse = try decoder.decode(YoutubeSearchResponse.self, from: data)
+        // Parse as generic JSON first to filter out non-video items
+        guard let jsonObject = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let itemsArray = jsonObject["items"] as? [[String: Any]] else {
+            print("Failed to parse JSON structure")
+            return []
+        }
+        
+        // Filter to only video items before decoding
+        let videoItemsData = itemsArray.filter { item in
+            if let id = item["id"] as? [String: Any],
+               let kind = id["kind"] as? String {
+                return kind == "youtube#video"
+            }
+            return false
+        }
+        
+        print("Total items received: \(itemsArray.count)")
+        print("Video items after filtering: \(videoItemsData.count)")
+        
+        // Create filtered response data
+        let filteredResponse = ["items": videoItemsData]
+        let filteredData = try JSONSerialization.data(withJSONObject: filteredResponse)
+        
+        // Now decode with your existing model
+        let youtubeVideoSearchResponse = try decoder.decode(YoutubeSearchResponse.self, from: filteredData)
+        
         return youtubeVideoSearchResponse.items
-        
-        
     }
 }

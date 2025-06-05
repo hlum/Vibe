@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Combine
+import MusicSlider
 
 enum IDForMatchedGeometry: Hashable {
     case image
@@ -71,10 +72,13 @@ struct FloatingCurrentMusicView: View {
     @StateObject private var vm: FloatingCurrentMusicViewModel
     @State private var showCurrentPlayingDetail: Bool = false
     
+    @State private var isSeeking: Bool = false
+    @State private var sliderHeight: CGFloat = 10
+    @State private var sliderValue: Double = 0
+    
     
     @State private var dragStartTime: Date?
     @State private var dragTranslation: CGFloat = 0
-    
     @Namespace private var animation
     
     init(audioPlayerUseCase: AudioPlayerUseCase) {
@@ -99,7 +103,7 @@ extension FloatingCurrentMusicView {
                 Image(systemName: "music.note")
                     .matchedGeometryEffect(id: IDForMatchedGeometry.image, in: animation)
                     .font(.system(size: 80))
-                    .foregroundColor(.black)
+                    .foregroundColor(.dartkModeBlack)
                     .frame(width: 200, height: 200)
                     .background(Color.gray.opacity(0.2))
                     .cornerRadius(10)
@@ -114,7 +118,7 @@ extension FloatingCurrentMusicView {
                     .font(.title2)
                     .bold()
                     .multilineTextAlignment(.center)
-                    .foregroundStyle(.black)
+                    .foregroundStyle(.dartkModeBlack)
                     .scaleEffect(CGFloat(1-(dragTranslation / 1000)))
                     .offset(x: -dragTranslation / 8)
 
@@ -122,15 +126,42 @@ extension FloatingCurrentMusicView {
                 
                 // Progress Bar
                 VStack(spacing: 8) {
-                    Slider(value: $vm.currentPlaybackTime, in: 0...currentAudio.duration) { editing in
-                        if !editing {
-                            vm.seekToTime(vm.currentPlaybackTime)
-                        }
-                    }
-                    .scaleEffect(CGFloat(1-(dragTranslation / 1000)))
                     
+                    MusicSlider(
+                        value: $sliderValue,
+                        totalValue: currentAudio.duration,
+                        valueIndicatorColor: .dartkModeBlack.opacity(0.7),
+                        heightOfSlider: $sliderHeight) {
+                            Circle().opacity(0.00001)
+                        } onChange: { value in
+                            isSeeking = true
+                            vm.currentPlaybackTime = value
+
+                            withAnimation(.spring(response: 0.3)) {
+                                sliderHeight = 20
+                            }
+                        } onEnded: { value in
+                            sliderValue = value
+                            vm.currentPlaybackTime = value
+                            withAnimation(.spring(response: 0.3)) {
+                                sliderHeight = 10
+                            }
+                            vm.seekToTime(vm.currentPlaybackTime)
+                            // Delay setting isSeeking to false
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                isSeeking = false
+                            }
+                        }
+                        .scaleEffect(CGFloat(1-(dragTranslation / 1000)))
+                        .onChange(of: vm.currentPlaybackTime) { _, newValue in
+                            if !isSeeking {
+                                self.sliderValue = newValue
+                            }
+                        }
+
+                                        
                     HStack {
-                        Text(formatDuration(vm.currentPlaybackTime))
+                        Text(formatDuration(self.sliderValue))
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .scaleEffect(CGFloat(1-(dragTranslation / 1000)))
@@ -152,7 +183,7 @@ extension FloatingCurrentMusicView {
                     Button(action: vm.playPrevious) {
                         Image(systemName: "backward.fill")
                             .font(.title)
-                            .foregroundColor(.black)
+                            .foregroundColor(.dartkModeBlack)
                             .scaleEffect(CGFloat(1-(dragTranslation / 1000)))
 
                     }
@@ -167,14 +198,14 @@ extension FloatingCurrentMusicView {
                     }) {
                         Image(systemName: vm.isPlaying ? "pause.circle.fill" : "play.circle.fill")
                             .font(.system(size: 60))
-                            .foregroundColor(.black)
+                            .foregroundColor(.dartkModeBlack)
                             .scaleEffect(CGFloat(1-(dragTranslation / 1000)))
                     }
                     
                     Button(action: vm.playNext) {
                         Image(systemName: "forward.fill")
                             .font(.title)
-                            .foregroundColor(.black)
+                            .foregroundColor(.dartkModeBlack)
                             .scaleEffect(CGFloat(1-(dragTranslation / 1000)))
                     }
                 }
@@ -183,7 +214,7 @@ extension FloatingCurrentMusicView {
                 Button(action: vm.toggleLoop) {
                     Image(systemName: "repeat")
                         .font(.title2)
-                        .foregroundColor(vm.isLooping ? .black : .gray)
+                        .foregroundColor(vm.isLooping ? .green : .gray)
                         .scaleEffect(CGFloat(1-(dragTranslation / 1000)))
                 }
                 
@@ -194,7 +225,7 @@ extension FloatingCurrentMusicView {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(.white)
+        .background(.darkModeWhite)
         .shadow(color: .gray.opacity(0.4), radius: 10, x: 0, y: -4)
         .offset(y: dragTranslation)
         
@@ -239,7 +270,7 @@ extension FloatingCurrentMusicView {
     
     private var collapsedFloatingCurrentMusicView: some View {
         ZStack {
-            Color.white
+            Color.darkModeWhite
                 .onTapGesture {
                     withAnimation(.smooth) {
                         showCurrentPlayingDetail.toggle()
@@ -247,6 +278,7 @@ extension FloatingCurrentMusicView {
                 }
             HStack {
                 Image(systemName: "music.note")
+                    .foregroundStyle(.dartkModeBlack)
                     .matchedGeometryEffect(id: IDForMatchedGeometry.image, in: animation)
                     .font(.system(size: 30))
                     .foregroundColor(.black)
@@ -257,6 +289,7 @@ extension FloatingCurrentMusicView {
                 
                 
                 Text(vm.currentAudio?.title ?? "No Music")
+                    .foregroundStyle(.dartkModeBlack)
                     .matchedGeometryEffect(id: IDForMatchedGeometry.title, in: animation)
                     .font(.system(size: 14))
                     .lineLimit(1)
@@ -274,6 +307,7 @@ extension FloatingCurrentMusicView {
                         }
                     } label: {
                         Image(systemName: vm.isPlaying ? "pause.fill" : "play.fill")
+                            .foregroundStyle(.dartkModeBlack)
                             .font(.system(size: 20))
                             .frame(width: 60)
                             .frame(maxHeight: .infinity)
@@ -284,6 +318,7 @@ extension FloatingCurrentMusicView {
                         vm.playNext()
                     } label: {
                         Image(systemName: "forward.fill")
+                            .foregroundStyle(.dartkModeBlack)
                             .font(.system(size: 20))
                             .frame(width: 60)
                             .frame(maxHeight: .infinity)
@@ -296,11 +331,11 @@ extension FloatingCurrentMusicView {
         }
         .frame(maxWidth: .infinity)
         .frame(height: 70)
-        .background(.thinMaterial)
+        .background(.darkModeWhite)
         .cornerRadius(10)
         .padding(.horizontal, 10)
         .padding(.bottom, 70)
-        .foregroundStyle(.black)
+        .foregroundStyle(.dartkModeBlack)
         .shadow(color: .gray.opacity(0.4), radius:  10, x: 0, y: 0)
 
     }

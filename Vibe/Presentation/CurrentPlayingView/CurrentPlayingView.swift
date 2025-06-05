@@ -93,6 +93,8 @@ struct CurrentPlayingView: View {
                     .foregroundColor(.secondary)
             }
         }
+        .background(Color.darkModeWhite)
+        .foregroundStyle(Color.dartkModeBlack)
         .padding()
     }
     

@@ -46,7 +46,11 @@ final class MainTabViewModel: ObservableObject {
         do {
             self.searchResults = try await youtubeVideoSearchUseCase.search(keyword: keyword)
         } catch {
-            print("Error searching youtube video: \(error.localizedDescription)")
+            if let decodingError = error as? DecodingError {
+                print("Decoding Error: \(decodingError.detailedDescription)")
+            } else {
+                print("Error searching youtube video: \(error.localizedDescription)")
+            }
         }
     }
 
@@ -67,7 +71,7 @@ final class MainTabViewModel: ObservableObject {
             let downloadedAudio = DownloadedAudio(title: fileName, originalURL: keyword, duration: duration)
                 
             try await savedAudioUseCase.saveAudio(downloadedAudio)
-            
+            audioPlayerUseCase.updateAllSongsList()
             
         } catch {
             print("Error downloading: \(error.localizedDescription)")
