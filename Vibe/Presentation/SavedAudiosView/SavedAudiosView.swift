@@ -14,21 +14,20 @@ struct SavedAudiosView: View {
     @StateObject private var vm: SavedAudiosViewModel
     
     @Binding var downloadingProcesses: [DownloadingProcess]
-    
     @State private var showPlaylistAddAlert: Bool = false
     
     private let savedAudioUseCase: SavedAudioUseCase
     private let audioPlayerUseCase: AudioPlayerUseCase
     private let playlistUseCase: PlaylistUseCase
     
-    let floatingPlayerIsPresented: Bool
+    @Binding var floatingPlayerIsPresented: Bool
     
     init(
         savedAudioUseCase: SavedAudioUseCase,
         audioPlayerUseCase: AudioPlayerUseCase,
         playlistUseCase: PlaylistUseCase,
         downloadingProcesses: Binding<[DownloadingProcess]>,
-        floatingPlayerIsPresented: Bool
+        floatingPlayerIsPresented: Binding<Bool>
     ) {
         _vm = .init(wrappedValue: SavedAudiosViewModel(
             savedAudioUseCase: savedAudioUseCase,
@@ -40,7 +39,7 @@ struct SavedAudiosView: View {
         self.playlistUseCase = playlistUseCase
         
         _downloadingProcesses = downloadingProcesses
-        self.floatingPlayerIsPresented = floatingPlayerIsPresented
+        _floatingPlayerIsPresented = floatingPlayerIsPresented
     }
     
     var body: some View {
@@ -54,7 +53,8 @@ struct SavedAudiosView: View {
                 playlistType: .all,
                 savedAudioUseCase: savedAudioUseCase,
                 audioPlayerUseCase: audioPlayerUseCase,
-                playlistUseCase: playlistUseCase
+                playlistUseCase: playlistUseCase,
+                floatingViewShowing: $floatingPlayerIsPresented
             )
             
             ForEach(vm.playlists) { playlist in
@@ -62,7 +62,8 @@ struct SavedAudiosView: View {
                     playlistType: .playlist(playlist),
                     savedAudioUseCase: savedAudioUseCase,
                     audioPlayerUseCase: audioPlayerUseCase,
-                    playlistUseCase: playlistUseCase
+                    playlistUseCase: playlistUseCase,
+                    floatingViewShowing: $floatingPlayerIsPresented
                 )
                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                     Button {
@@ -122,7 +123,7 @@ struct SavedAudiosView: View {
         SavedAudiosView(
             savedAudioUseCase: container.savedAudioUseCase,
             audioPlayerUseCase: container.audioPlayerUseCase, playlistUseCase: container.playlistUseCase,
-            downloadingProcesses: .constant(DownloadingProcess.dummyData()), floatingPlayerIsPresented: false
+            downloadingProcesses: .constant(DownloadingProcess.dummyData()), floatingPlayerIsPresented: .constant(false)
         )
     }
 }

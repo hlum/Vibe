@@ -13,7 +13,7 @@ struct MainTabView: View {
     private let savedAudioUseCase: SavedAudioUseCase
     private let audioPlayerUseCase: AudioPlayerUseCase
     private let playlistUseCase: PlaylistUseCase
-    
+    @State var floatingPlayerIsPresented: Bool = false
     @StateObject private var vm: MainTabViewModel
     
     init(
@@ -38,7 +38,7 @@ struct MainTabView: View {
                         savedAudioUseCase: savedAudioUseCase,
                         audioPlayerUseCase: audioPlayerUseCase, playlistUseCase: playlistUseCase,
                         downloadingProcesses: $vm.downloadingProcesses,
-                        floatingPlayerIsPresented: vm.currentAudio != nil
+                        floatingPlayerIsPresented: $floatingPlayerIsPresented
                     )
                 }
                 .tabItem {
@@ -68,6 +68,9 @@ struct MainTabView: View {
             FloatingCurrentMusicView(audioPlayerUseCase: audioPlayerUseCase)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
                 .opacity(vm.currentAudio != nil ? 1 : 0)
+                .onChange(of: vm.currentAudio) { _, newValue in
+                    floatingPlayerIsPresented = newValue != nil
+                }
             
         }
     }
