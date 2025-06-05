@@ -144,15 +144,17 @@ extension SongListViewModel {
 struct SongListView: View {
     @State private var selectedSongToAddToPlaylist: DownloadedAudio? = nil
     @StateObject private var vm: SongListViewModel
-    
+    @Binding private var floatingPlayerIsPresented: Bool
     init(
         playListType: PlaylistType,
         selectedSongToAddToPlaylist: DownloadedAudio? = nil,
         savedAudioUseCase: SavedAudioUseCase,
         audioPlayerUseCase: AudioPlayerUseCase,
-        playlistUseCase: PlaylistUseCase
+        playlistUseCase: PlaylistUseCase,
+        floatingPlayerIsPresented: Binding<Bool>
     ) {
         self.selectedSongToAddToPlaylist = selectedSongToAddToPlaylist
+        _floatingPlayerIsPresented = floatingPlayerIsPresented
         _vm = .init(
             wrappedValue: .init(
                 playlistType: playListType,
@@ -195,6 +197,7 @@ struct SongListView: View {
                 }
             }
         }
+        .padding(.bottom, floatingPlayerIsPresented ? 100 : 0)
         .listStyle(.plain)
         .sheet(item: $selectedSongToAddToPlaylist) { song in
             playListSelectionSheet(song: song)
@@ -221,7 +224,8 @@ extension SongListView {
                             isNavigationLinkActive: false,
                             savedAudioUseCase: vm.savedAudioUseCase,
                             audioPlayerUseCase: vm.audioPlayerUseCase,
-                            playlistUseCase: vm.playlistUseCase
+                            playlistUseCase: vm.playlistUseCase,
+                            floatingViewShowing: $floatingPlayerIsPresented
                         )
                     }
                     
@@ -230,6 +234,7 @@ extension SongListView {
             }
             .listStyle(.plain)
             .navigationTitle("Add to playlist")
+            .padding(.bottom, floatingPlayerIsPresented ? 100 : 0)
             
         }
         Spacer()
@@ -243,6 +248,6 @@ extension SongListView {
         playListType: .all,
         savedAudioUseCase: container.savedAudioUseCase,
         audioPlayerUseCase: container.audioPlayerUseCase,
-        playlistUseCase: container.playlistUseCase
+        playlistUseCase: container.playlistUseCase, floatingPlayerIsPresented: .constant(false)
     )
 }

@@ -43,6 +43,7 @@ struct PlaylistItemView: View {
     var playlistType: PlaylistType
     var isNavigationLinkActive: Bool
     
+    @Binding var floatingViewShowing: Bool
     private var savedAudioUseCase: SavedAudioUseCase
     private var audioPlayerUseCase: AudioPlayerUseCase
     private var playlistUseCase: PlaylistUseCase
@@ -52,7 +53,8 @@ struct PlaylistItemView: View {
         isNavigationLinkActive: Bool = true,
         savedAudioUseCase: SavedAudioUseCase,
         audioPlayerUseCase: AudioPlayerUseCase,
-        playlistUseCase: PlaylistUseCase
+        playlistUseCase: PlaylistUseCase,
+        floatingViewShowing: Binding<Bool>
     ) {
         self.playlistType = playlistType
         self.isNavigationLinkActive = isNavigationLinkActive
@@ -61,6 +63,7 @@ struct PlaylistItemView: View {
         self.audioPlayerUseCase = audioPlayerUseCase
         self.playlistUseCase = playlistUseCase
         
+        _floatingViewShowing = floatingViewShowing
         _vm = .init(wrappedValue: .init(
             savedAudioUseCase: savedAudioUseCase,
             audioPlayerUseCase: audioPlayerUseCase,
@@ -77,7 +80,8 @@ struct PlaylistItemView: View {
                         playListType: playlistType,
                         savedAudioUseCase: savedAudioUseCase,
                         audioPlayerUseCase: audioPlayerUseCase,
-                        playlistUseCase: playlistUseCase
+                        playlistUseCase: playlistUseCase,
+                        floatingPlayerIsPresented: $floatingViewShowing
                     )
                 } label: {
                     itemView
@@ -102,7 +106,6 @@ struct PlaylistItemView: View {
             Spacer()
             
         }
-        .background(.darkModeWhite)
         .padding(.horizontal)
     }
 }

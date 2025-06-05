@@ -130,7 +130,7 @@ extension FloatingCurrentMusicView {
                     MusicSlider(
                         value: $sliderValue,
                         totalValue: currentAudio.duration,
-                        valueIndicatorColor: .black.opacity(0.7),
+                        valueIndicatorColor: .dartkModeBlack.opacity(0.7),
                         heightOfSlider: $sliderHeight) {
                             Circle().opacity(0.00001)
                         } onChange: { value in
@@ -150,7 +150,8 @@ extension FloatingCurrentMusicView {
                             // Delay setting isSeeking to false
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                                 isSeeking = false
-                            }                        }
+                            }
+                        }
                         .scaleEffect(CGFloat(1-(dragTranslation / 1000)))
                         .onChange(of: vm.currentPlaybackTime) { _, newValue in
                             if !isSeeking {
