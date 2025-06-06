@@ -33,7 +33,7 @@ struct AudioItemRow: View {
                 }
                 
                 if isPlaying {
-                    Color.gray.opacity(0.8).frame(width: 50, height: 50).cornerRadius(10)
+                    Color.dartkModeBlack.opacity(0.6).frame(width: 50, height: 50).cornerRadius(10)
                     MusicVisualizerView(width: 20, height: 20)
                 }
             }
