@@ -46,9 +46,9 @@ struct MainTabView: View {
                 }
                 .tag(0)
                 NavigationStack {
-                    SearchAndDownloadView(keyWord: $vm.keyword, searchResults: $vm.searchResults, download: { fileName in
+                    SearchAndDownloadView(keyWord: $vm.keyword, searchResults: $vm.searchResults, download: { fileName, imgURL in
                         Task {
-                            await vm.downloadAndSave(fileName: fileName, keyword: vm.keyword)
+                            await vm.downloadAndSave(fileName: fileName, keyword: vm.keyword, imgURL: imgURL)
                         }
                     }, search: {
                         Task {

@@ -21,6 +21,13 @@ class SwiftDataAudioRepoImpl : AudioDataRepository {
         try context.save()
     }
     
+    
+    func updateCoverImage(url: String, for audio: DownloadedAudio) throws {
+        audio.imgURL = url
+        try context.save()
+    }
+
+    
     func fetchAllDownloadedAudio() throws -> [DownloadedAudio] {
         try fetchSongs()
     }

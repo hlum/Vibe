@@ -11,11 +11,12 @@ import SwiftUI
 struct SearchAndDownloadView: View {
     @State private var showFileNameInputAlert: Bool = false
     @State private var fileName: String = ""
+    @State private var imgURLOfSelectedVideo: String = ""
     @Binding var keyWord: String
     @Binding var searchResults: [YoutubeSearchItem]
     
     
-    let download: (_ fileName: String) -> Void
+    let download: (_ fileName: String, _ imgURL: String) -> Void
     let search: () -> Void
     
     let showingFloatingPanel: Bool
@@ -75,6 +76,7 @@ struct SearchAndDownloadView: View {
                             fileName = result.snippet.title
                             showFileNameInputAlert.toggle()
                             keyWord = result.id.getYoutubeURL()
+                            imgURLOfSelectedVideo = result.snippet.thumbnail.medium.url
                         } label: {
                             ZStack {
                                 Image(systemName: "arrow.down.circle.fill")
@@ -98,7 +100,7 @@ struct SearchAndDownloadView: View {
         .overlay(alignment: .center) {
             if showFileNameInputAlert {
                 CustomAlertView(present: $showFileNameInputAlert, inputText: $fileName) {
-                    download(fileName)
+                    download(fileName, imgURLOfSelectedVideo)
                 }
             }
         }
@@ -107,5 +109,5 @@ struct SearchAndDownloadView: View {
 }
 
 #Preview {
-    SearchAndDownloadView(keyWord: .constant("asd"), searchResults: .constant(YoutubeSearchItem.getDummyItems()), download: {fileName in },search: {}, showingFloatingPanel: false)
+    SearchAndDownloadView(keyWord: .constant("asd"), searchResults: .constant(YoutubeSearchItem.getDummyItems()), download: {fileName, imgURL in },search: {}, showingFloatingPanel: false)
 }

@@ -11,11 +11,13 @@ protocol SavedAudioUseCase {
     func saveAudio(_ downloadedAudio: DownloadedAudio) async throws
     func getSavedAudios(playlistType: PlaylistType) async throws -> [DownloadedAudio]
     func deleteAudio(_ audio: DownloadedAudio) async throws
-    func addToPlaylist(_ audio: DownloadedAudio, to playlist: Playlist) async 
+    func addToPlaylist(_ audio: DownloadedAudio, to playlist: Playlist) async
+    func updateCoverImage(url: String, for audio: DownloadedAudio) async throws
 }
 
 
 class SwiftDataSavedAudioUseCaseImpl: SavedAudioUseCase {
+    
     let repository: AudioDataRepository
     
     init(audioRepo: AudioDataRepository) {
@@ -43,11 +45,19 @@ class SwiftDataSavedAudioUseCaseImpl: SavedAudioUseCase {
     
     
     func deleteAudio(_ audio: DownloadedAudio) async throws {
-        
+        try await repository.deleteDownloadedAudio(audio)
+
         let localURL = try getLocalPath(for: audio)
         try FileManager.default.removeItem(at: localURL)
-        try await repository.deleteDownloadedAudio(audio)
+        
+
     }
+    
+    
+    func updateCoverImage(url: String, for audio: DownloadedAudio) async throws {
+        try await repository.updateCoverImage(url: url, for: audio)
+    }
+
     
     
     func addToPlaylist(_ audio: DownloadedAudio, to playlist: Playlist) async {
@@ -59,15 +69,25 @@ class SwiftDataSavedAudioUseCaseImpl: SavedAudioUseCase {
     }
     
     private func getLocalPath(for audio: DownloadedAudio) throws -> URL {
-        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        let fileURL = documentsPath.appendingPathComponent("\(audio.title).m4a")
+        let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         
-        guard FileManager.default.fileExists(atPath: fileURL.path) else {
-            print("Audio file not found at path: \(fileURL.path)")
-            throw URLError(.fileDoesNotExist)
+        let possibleFilenames = [
+            "\(audio.title).m4a",  // Old format
+            "\(audio.id).m4a"      // New, safer format
+        ]
+        
+        for filename in possibleFilenames {
+            let fileURL = documentsDirectory.appendingPathComponent(filename)
+            if FileManager.default.fileExists(atPath: fileURL.path) {
+                print("File found at path: \(fileURL.path)")
+                return fileURL
+            } else {
+                print("File not found at path: \(fileURL.path)")
+            }
         }
-        
-        return fileURL
+
+        throw URLError(.fileDoesNotExist)
     }
+
     
 }

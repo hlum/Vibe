@@ -59,6 +59,7 @@ struct MusicVisualizerView: View {
         HStack(spacing: spacing) {
             ForEach(viewModel.barHeights.indices, id: \.self) { index in
                 Rectangle()
+                    .foregroundStyle(.darkModeWhite)
                     .frame(width: barWidth, height: viewModel.barHeights[index])
                     .cornerRadius(2)
             }

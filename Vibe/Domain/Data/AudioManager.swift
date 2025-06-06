@@ -50,18 +50,22 @@ class AudioManager: NSObject, AudioManagerRepository, AVAudioPlayerDelegate {
 
 // MARK: - Public Methods
 extension AudioManager {
+    
+    
     func play(_ audio: DownloadedAudio) {
         stopCurrentPlayback()
         
-        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        let fileURL = documentsPath.appendingPathComponent("\(audio.title).m4a")
-        
-        guard FileManager.default.fileExists(atPath: fileURL.path) else {
-            print("Audio file not found at path: \(fileURL.path)")
+        var fileURL: URL? = nil
+        do {
+            fileURL = try getLocalPath(for: audio)
+        } catch {
+            print("Error getting local file URL: \(error.localizedDescription)")
+        }
+        guard let fileURL else {
+            print("FileURL not found.")
             return
         }
         
-        print(fileURL)
         
         let asset = AVAsset(url: fileURL)
         let playerItem = AVPlayerItem(asset: asset)
@@ -83,7 +87,9 @@ extension AudioManager {
         Task {
             do {
                 let duration = try await getAudioDuration(from: fileURL)
-                updateNowPlayingInfo(title: audio.title, artist: "Unknown", duration: duration)
+                let coverImage = await getCoverImage(from: audio)
+                
+                updateNowPlayingInfo(title: audio.title, artist: "Unknown", duration: duration, artworkImage: coverImage)
             } catch {
                 print("Error updating now playing info: \(error.localizedDescription)")
             }
@@ -127,6 +133,35 @@ extension AudioManager {
 
 // MARK: - Private Methods
 private extension AudioManager {
+    private func getCoverImage(from audio: DownloadedAudio) async -> UIImage {
+        var uiImage = UIImage()
+        
+        if let imgURL = audio.getImageURL() {
+            if imgURL.starts(with: "http") {
+                uiImage = await downloadImage(from: imgURL) ?? UIImage()
+            } else {
+                uiImage = UIImage(contentsOfFile: imgURL) ?? UIImage()
+            }
+        }
+        return uiImage
+    }
+    
+    private func downloadImage(from urlString: String) async -> UIImage? {
+        guard let url = URL(string: urlString) else {
+            print("❌ Invalid URL: \(urlString)")
+            return nil
+        }
+
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            return UIImage(data: data)
+        } catch {
+            print("❌ Error downloading image: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
+    
     func setupAudioSession() {
         do {
             let session = AVAudioSession.sharedInstance()
@@ -254,16 +289,44 @@ extension AudioManager {
             }
         }
     }
+    
+    private func getLocalPath(for audio: DownloadedAudio) throws -> URL {
+        let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        
+        let possibleFilenames = [
+            "\(audio.title).m4a",  // Old format
+            "\(audio.id).m4a"      // New, safer format
+        ]
+        
+        for filename in possibleFilenames {
+            let fileURL = documentsDirectory.appendingPathComponent(filename)
+            if FileManager.default.fileExists(atPath: fileURL.path) {
+                print("File found at path: \(fileURL.path)")
+                return fileURL
+            } else {
+                print("File not found at path: \(fileURL.path)")
+            }
+        }
+
+        throw URLError(.fileDoesNotExist)
+    }
 }
 
 // MARK: - Now Playing Info
 private extension AudioManager {
-    func updateNowPlayingInfo(title: String, artist: String, duration: TimeInterval) {
+    func updateNowPlayingInfo(title: String, artist: String, duration: TimeInterval, artworkImage: UIImage) {
+        
+        let artwork = MPMediaItemArtwork(boundsSize: artworkImage.size) { size in
+            return artworkImage
+        }
+        
+        
         var nowPlayingInfo = [String: Any]()
 
         nowPlayingInfo[MPMediaItemPropertyTitle] = title
         nowPlayingInfo[MPMediaItemPropertyArtist] = artist
         nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = duration
+        nowPlayingInfo[MPMediaItemPropertyArtwork] = artwork
         nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = 0
         nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = 1.0 // 1.0 = playing, 0.0 = paused
 
