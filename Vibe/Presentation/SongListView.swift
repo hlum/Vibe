@@ -174,6 +174,7 @@ struct SongListView: View {
                     }
                 } label: {
                     AudioItemRow(
+                        savedAudioUseCase: vm.savedAudioUseCase,
                         currentPlaybackTime: $vm.currentPlaybackTime,
                         audio: audio,
                         isPlaying: vm.currentAudio?.id == audio.id && vm.isPlaying

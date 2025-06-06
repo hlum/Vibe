@@ -11,11 +11,13 @@ protocol SavedAudioUseCase {
     func saveAudio(_ downloadedAudio: DownloadedAudio) async throws
     func getSavedAudios(playlistType: PlaylistType) async throws -> [DownloadedAudio]
     func deleteAudio(_ audio: DownloadedAudio) async throws
-    func addToPlaylist(_ audio: DownloadedAudio, to playlist: Playlist) async 
+    func addToPlaylist(_ audio: DownloadedAudio, to playlist: Playlist) async
+    func updateCoverImage(url: String, for audio: DownloadedAudio) async throws
 }
 
 
 class SwiftDataSavedAudioUseCaseImpl: SavedAudioUseCase {
+    
     let repository: AudioDataRepository
     
     init(audioRepo: AudioDataRepository) {
