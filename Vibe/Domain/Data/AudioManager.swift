@@ -50,18 +50,22 @@ class AudioManager: NSObject, AudioManagerRepository, AVAudioPlayerDelegate {
 
 // MARK: - Public Methods
 extension AudioManager {
+    
+    
     func play(_ audio: DownloadedAudio) {
         stopCurrentPlayback()
         
-        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        let fileURL = documentsPath.appendingPathComponent("\(audio.id).m4a")
-        
-        guard FileManager.default.fileExists(atPath: fileURL.path) else {
-            print("Audio file not found at path: \(fileURL.path)")
+        var fileURL: URL? = nil
+        do {
+            fileURL = try getLocalPath(for: audio)
+        } catch {
+            print("Error getting local file URL: \(error.localizedDescription)")
+        }
+        guard let fileURL else {
+            print("FileURL not found.")
             return
         }
         
-        print(fileURL)
         
         let asset = AVAsset(url: fileURL)
         let playerItem = AVPlayerItem(asset: asset)
@@ -253,6 +257,27 @@ extension AudioManager {
                 break
             }
         }
+    }
+    
+    private func getLocalPath(for audio: DownloadedAudio) throws -> URL {
+        let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        
+        let possibleFilenames = [
+            "\(audio.title).m4a",  // Old format
+            "\(audio.id).m4a"      // New, safer format
+        ]
+        
+        for filename in possibleFilenames {
+            let fileURL = documentsDirectory.appendingPathComponent(filename)
+            if FileManager.default.fileExists(atPath: fileURL.path) {
+                print("File found at path: \(fileURL.path)")
+                return fileURL
+            } else {
+                print("File not found at path: \(fileURL.path)")
+            }
+        }
+
+        throw URLError(.fileDoesNotExist)
     }
 }
 

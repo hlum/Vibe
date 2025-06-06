@@ -73,15 +73,9 @@ struct AudioItemRow: View {
     var body: some View {
         HStack(spacing: 20) {
             ZStack {
-                if let imgURL = audio.getImageURL() {
-                    if imgURL.starts(with: "http") {
-                        imgWithAsyncImage(imgURL)
-                    } else {
-                        imgFromLocal(imgURL)
-                    }
-                } else {
-                    placeHolderImageView
-                }
+                let imgURL = audio.getImageURL()
+                CoverImageView(imgURL: imgURL ?? "")
+                
                 
                 if isPlaying {
                     Color.dartkModeBlack.opacity(0.6).frame(width: 50, height: 50).cornerRadius(10)
@@ -122,41 +116,6 @@ struct AudioItemRow: View {
         })
     }
     
-    @ViewBuilder
-    private func imgFromLocal(_ url: String) -> some View {
-        if let uiImage = UIImage(contentsOfFile: url) {
-            Image(uiImage: uiImage)
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 50, height: 50)
-                .cornerRadius(10)
-        } else {
-            placeHolderImageView
-        }
-    }
-    
-    private func imgWithAsyncImage(_ url: String) -> some View {
-        AsyncImage(url: URL(string: url)) { image in
-            image
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 50, height: 50)
-                .cornerRadius(10)
-        } placeholder: {
-            placeHolderImageView
-        }
-
-    }
-    
-    private var placeHolderImageView: some View  {
-        Image(systemName: "music.note")
-            .foregroundStyle(.dartkModeBlack)
-            .font(.system(size: 30))
-            .foregroundColor(.black)
-            .frame(width: 50, height: 50)
-            .background(Color.gray.opacity(0.2))
-            .cornerRadius(10)
-    }
     
     private func formatDuration(_ duration: TimeInterval) -> String {
         let minutes = Int(duration) / 60
