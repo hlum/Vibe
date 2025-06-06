@@ -25,9 +25,10 @@ struct CoverImageView: View {
         if let uiImage = UIImage(contentsOfFile: url) {
             Image(uiImage: uiImage)
                 .resizable()
-                .aspectRatio(contentMode: .fit)
+                .aspectRatio(contentMode: .fill)
                 .frame(width: width, height: height)
                 .cornerRadius(10)
+                .clipped()
         } else {
             placeHolderImageView
         }
