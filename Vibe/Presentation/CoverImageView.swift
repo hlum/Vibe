@@ -9,6 +9,9 @@ import SwiftUI
 
 struct CoverImageView: View {
     var imgURL: String
+    var width: CGFloat = 50
+    var height: CGFloat = 50
+    
     var body: some View {
         if imgURL.starts(with: "http") {
             imgWithAsyncImage(imgURL)
@@ -23,7 +26,7 @@ struct CoverImageView: View {
             Image(uiImage: uiImage)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .frame(width: 50, height: 50)
+                .frame(width: width, height: height)
                 .cornerRadius(10)
         } else {
             placeHolderImageView
@@ -35,7 +38,7 @@ struct CoverImageView: View {
             image
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .frame(width: 50, height: 50)
+                .frame(width: width, height: height)
                 .cornerRadius(10)
         } placeholder: {
             placeHolderImageView

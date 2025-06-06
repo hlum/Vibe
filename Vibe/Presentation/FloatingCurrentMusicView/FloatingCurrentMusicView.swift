@@ -100,16 +100,15 @@ extension FloatingCurrentMusicView {
     private var expandedFloatingCurrentMusicView: some View {
         VStack(spacing: 16) {
             if let currentAudio = vm.currentAudio {
-                Image(systemName: "music.note")
-                    .matchedGeometryEffect(id: IDForMatchedGeometry.image, in: animation)
-                    .font(.system(size: 80))
-                    .foregroundColor(.dartkModeBlack)
-                    .frame(width: 200, height: 200)
-                    .background(Color.gray.opacity(0.2))
-                    .cornerRadius(10)
-                    .scaleEffect(CGFloat(1-(dragTranslation / 1000)))
                 
-                    .offset(x: -dragTranslation / 4)
+                CoverImageView(
+                    imgURL: currentAudio.getImageURL() ?? "",
+                    width: 200,
+                    height: 200
+                )
+                .scaleEffect(CGFloat(1-(dragTranslation / 1000)))
+                .offset(x: -dragTranslation / 4)
+
 
                 
                 // Song Title
@@ -287,15 +286,10 @@ extension FloatingCurrentMusicView {
                     }
                 }
             HStack {
-                Image(systemName: "music.note")
-                    .foregroundStyle(.dartkModeBlack)
-                    .matchedGeometryEffect(id: IDForMatchedGeometry.image, in: animation)
-                    .font(.system(size: 30))
-                    .foregroundColor(.black)
-                    .frame(width: 50, height: 50)
-                    .background(Color.gray.opacity(0.2))
-                    .cornerRadius(10)
+                
+                CoverImageView(imgURL: vm.currentAudio?.getImageURL() ?? "")
                     .padding(.horizontal)
+                    .matchedGeometryEffect(id: IDForMatchedGeometry.image, in: animation)
                 
                 
                 Text(vm.currentAudio?.title ?? "No Music")
