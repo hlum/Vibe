@@ -51,7 +51,7 @@ struct CoverImageView: View {
             .foregroundStyle(.dartkModeBlack)
             .font(.system(size: 30))
             .foregroundColor(.black)
-            .frame(width: 50, height: 50)
+            .frame(width: width, height: height)
             .background(Color.gray.opacity(0.2))
             .cornerRadius(10)
     }

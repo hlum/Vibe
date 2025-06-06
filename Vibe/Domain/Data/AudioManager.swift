@@ -87,7 +87,9 @@ extension AudioManager {
         Task {
             do {
                 let duration = try await getAudioDuration(from: fileURL)
-                updateNowPlayingInfo(title: audio.title, artist: "Unknown", duration: duration)
+                let coverImage = await getCoverImage(from: audio)
+                
+                updateNowPlayingInfo(title: audio.title, artist: "Unknown", duration: duration, artworkImage: coverImage)
             } catch {
                 print("Error updating now playing info: \(error.localizedDescription)")
             }
@@ -131,6 +133,35 @@ extension AudioManager {
 
 // MARK: - Private Methods
 private extension AudioManager {
+    private func getCoverImage(from audio: DownloadedAudio) async -> UIImage {
+        var uiImage = UIImage()
+        
+        if let imgURL = audio.getImageURL() {
+            if imgURL.starts(with: "http") {
+                uiImage = await downloadImage(from: imgURL) ?? UIImage()
+            } else {
+                uiImage = UIImage(contentsOfFile: imgURL) ?? UIImage()
+            }
+        }
+        return uiImage
+    }
+    
+    private func downloadImage(from urlString: String) async -> UIImage? {
+        guard let url = URL(string: urlString) else {
+            print("❌ Invalid URL: \(urlString)")
+            return nil
+        }
+
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            return UIImage(data: data)
+        } catch {
+            print("❌ Error downloading image: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
+    
     func setupAudioSession() {
         do {
             let session = AVAudioSession.sharedInstance()
@@ -283,12 +314,19 @@ extension AudioManager {
 
 // MARK: - Now Playing Info
 private extension AudioManager {
-    func updateNowPlayingInfo(title: String, artist: String, duration: TimeInterval) {
+    func updateNowPlayingInfo(title: String, artist: String, duration: TimeInterval, artworkImage: UIImage) {
+        
+        let artwork = MPMediaItemArtwork(boundsSize: artworkImage.size) { size in
+            return artworkImage
+        }
+        
+        
         var nowPlayingInfo = [String: Any]()
 
         nowPlayingInfo[MPMediaItemPropertyTitle] = title
         nowPlayingInfo[MPMediaItemPropertyArtist] = artist
         nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = duration
+        nowPlayingInfo[MPMediaItemPropertyArtwork] = artwork
         nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = 0
         nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = 1.0 // 1.0 = playing, 0.0 = paused
 
