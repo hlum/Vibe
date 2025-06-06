@@ -14,29 +14,55 @@ struct AudioItemRow: View {
     var isPlaying: Bool
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(audio.title)
-                        .font(.headline)
-                        .foregroundStyle(.dartkModeBlack)
+        HStack(spacing: 20) {
+            ZStack {
+                
+                if let imgURL = audio.imgURL {
                     
-                    Text("Downloaded: \(formatDate(audio.downloadDate))")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    AsyncImage(url: URL(string: imgURL)) { image in
+                        image
+                            .resizable()
+                            .frame(width: 50, height: 50)
+                            .cornerRadius(10)
+                    } placeholder: {
+                        placeHolderImageView
+                    }
+                    
+                } else {
+                    placeHolderImageView
                 }
                 
-                Spacer()
-                
                 if isPlaying {
+                    Color.gray.opacity(0.8).frame(width: 50, height: 50).cornerRadius(10)
                     MusicVisualizerView(width: 20, height: 20)
                 }
             }
-            .padding(.horizontal)
             
             
+            VStack(alignment: .leading, spacing: 4) {
+                Text(audio.title)
+                    .lineLimit(1)
+                    .font(.headline)
+                    .foregroundStyle(.dartkModeBlack)
+                
+                Text("Downloaded: \(formatDate(audio.downloadDate))")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            
+            Spacer()
         }
-        .padding(.vertical, 8)
+        
+    }
+    
+    private var placeHolderImageView: some View  {
+        Image(systemName: "music.note")
+            .foregroundStyle(.dartkModeBlack)
+            .font(.system(size: 30))
+            .foregroundColor(.black)
+            .frame(width: 50, height: 50)
+            .background(Color.gray.opacity(0.2))
+            .cornerRadius(10)
     }
     
     private func formatDuration(_ duration: TimeInterval) -> String {
