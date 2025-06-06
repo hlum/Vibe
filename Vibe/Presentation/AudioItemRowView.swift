@@ -51,6 +51,15 @@ struct AudioItemRow: View {
             }
             
             Spacer()
+            
+            Menu {
+                Button("Change cover image", action: {})
+            } label: {
+                Image(systemName: "ellipsis")
+                    .foregroundStyle(.dartkModeBlack)
+                    .frame(width: 30, height: 30)
+            }
+
         }
         
     }
