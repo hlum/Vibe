@@ -56,7 +56,7 @@ final class MainTabViewModel: ObservableObject {
 
     
     
-    func downloadAndSave(fileName: String, keyword: String) async {
+    func downloadAndSave(fileName: String, keyword: String, imgURL: String) async {
         do {
             let localURL = await youtubeDownloaderUseCase.downloadAndGetLocalURL(fileName: fileName, youtubeLink: keyword) { processes in
                 DispatchQueue.main.async {
@@ -68,7 +68,7 @@ final class MainTabViewModel: ObservableObject {
             
             
             let duration = try await audioPlayerUseCase.getDuration(for: localURL)
-            let downloadedAudio = DownloadedAudio(title: fileName, originalURL: keyword, duration: duration)
+            let downloadedAudio = DownloadedAudio(title: fileName, originalURL: keyword,imgURL: imgURL, duration: duration)
                 
             try await savedAudioUseCase.saveAudio(downloadedAudio)
             audioPlayerUseCase.updateAllSongsList()
