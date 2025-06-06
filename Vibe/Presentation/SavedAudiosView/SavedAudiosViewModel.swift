@@ -14,10 +14,8 @@ import Combine
 @MainActor
 class SavedAudiosViewModel: ObservableObject {
     @Published var playlistName: String = ""
-    @Published var currentPlaybackTime: Double = 0
     @Published var isPlaying: Bool = false
     @Published var currentAudio: DownloadedAudio?
-    @Published var isLooping: Bool = false
     @Published var playlists: [Playlist] = []
     
     private let savedAudioUseCase: SavedAudioUseCase
@@ -40,23 +38,14 @@ class SavedAudiosViewModel: ObservableObject {
     
     private func setupBindings() {
         // Bind to audio player use case publishers
-        audioPlayerUseCase.currentPlaybackTimePublisher
-            .assign(to: &$currentPlaybackTime)
-        
         audioPlayerUseCase.isPlayingPublisher
             .assign(to: &$isPlaying)
         
         audioPlayerUseCase.currentAudioPublisher
             .assign(to: &$currentAudio)
             
-        audioPlayerUseCase.isLoopingPublisher
-            .assign(to: &$isLooping)
     }
-    
-    func seekToTime(_ seconds: Double) {
-        audioPlayerUseCase.seek(to: seconds)
-    }
-    
+
     func playAudio(_ audio: DownloadedAudio) {
         if currentAudio?.id == audio.id {
             if isPlaying {
@@ -82,15 +71,7 @@ class SavedAudiosViewModel: ObservableObject {
     func playNext() {
         audioPlayerUseCase.playNext()
     }
-    
-    func playPrevious() {
-        audioPlayerUseCase.playPrevious()
-    }
-    
-    func toggleLoop() {
-        audioPlayerUseCase.toggleLoop()
-    }
-    
+            
     func delete(_ audio: DownloadedAudio) async {
         do {
             if currentAudio?.id == audio.id {

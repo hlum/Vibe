@@ -13,7 +13,7 @@ final class SongListViewModel: ObservableObject {
     @Published var currentPlaybackTime: Double = 0
     @Published var isPlaying: Bool = false
     @Published var currentAudio: DownloadedAudio?
-    @Published var isLooping: Bool = false
+//    @Published var isLooping: Bool = false
     @Published var playlists: [Playlist] = []
     @Published var songsInPlaylist: [DownloadedAudio] = []
     var playlistType: PlaylistType
@@ -64,16 +64,16 @@ final class SongListViewModel: ObservableObject {
         audioPlayerUseCase.currentAudioPublisher
             .assign(to: &$currentAudio)
             
-        audioPlayerUseCase.isLoopingPublisher
-            .assign(to: &$isLooping)
+//        audioPlayerUseCase.isLoopingPublisher
+//            .assign(to: &$isLooping)
     }
     
     func seekToTime(_ seconds: Double) {
         audioPlayerUseCase.seek(to: seconds)
     }
     
-    func playAudio(_ audio: DownloadedAudio) {
-        audioPlayerUseCase.updateCurrentPlaylistSongs(playlistType: playlistType)
+    func playAudio(_ audio: DownloadedAudio) async {
+        await audioPlayerUseCase.updateCurrentPlaylistSongs(playlistType: playlistType)
         
         if currentAudio?.id == audio.id {
             if isPlaying {
@@ -104,9 +104,9 @@ final class SongListViewModel: ObservableObject {
         audioPlayerUseCase.playPrevious()
     }
     
-    func toggleLoop() {
-        audioPlayerUseCase.toggleLoop()
-    }
+//    func toggleLoop() {
+//        audioPlayerUseCase.toggleLoop()
+//    }
     
     func delete(_ audio: DownloadedAudio) async {
         do {
@@ -169,7 +169,9 @@ struct SongListView: View {
         List {
             ForEach(vm.songsInPlaylist) { audio in
                 Button {
-                    vm.playAudio(audio)
+                    Task {
+                        await vm.playAudio(audio)
+                    }
                 } label: {
                     AudioItemRow(
                         currentPlaybackTime: $vm.currentPlaybackTime,
