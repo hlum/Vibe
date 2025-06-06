@@ -7,7 +7,16 @@
 
 import SwiftUI
 
+
+class AudioItemRowViewModel: ObservableObject {
+    @Published var showImagePicker: Bool = false
+    @Published var selectedImage: UIImage = UIImage()
+    
+    
+}
+
 struct AudioItemRow: View {
+    @StateObject var vm: AudioItemRowViewModel = AudioItemRowViewModel()
     @Binding var currentPlaybackTime: Double
     
     let audio: DownloadedAudio
@@ -53,13 +62,16 @@ struct AudioItemRow: View {
             Spacer()
             
             Menu {
-                Button("Change cover image", action: {})
+                Button("Change cover image", action: { vm.showImagePicker.toggle() })
             } label: {
                 Image(systemName: "ellipsis")
                     .foregroundStyle(.dartkModeBlack)
                     .frame(width: 30, height: 30)
             }
 
+        }
+        .sheet(isPresented: $vm.showImagePicker) {
+            ImagePicker(selectedImage: $vm.selectedImage)
         }
         
     }
