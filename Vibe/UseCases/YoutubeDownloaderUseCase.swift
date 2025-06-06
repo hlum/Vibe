@@ -9,6 +9,7 @@ import Foundation
 
 protocol YoutubeDownloaderUseCase {
     func downloadAndGetLocalURL(
+        id: String,
         fileName: String,
         youtubeLink: String,
         currentDownloadingProcessesUpdated: @escaping ([DownloadingProcess]) -> Void
@@ -35,6 +36,7 @@ class YoutubeDownloaderUseCaseImpl: YoutubeDownloaderUseCase {
     
     
     func downloadAndGetLocalURL(
+        id: String,
         fileName: String,
         youtubeLink: String,
         currentDownloadingProcessesUpdated: @escaping ([DownloadingProcess]) -> Void
@@ -52,9 +54,43 @@ class YoutubeDownloaderUseCaseImpl: YoutubeDownloaderUseCase {
         }
         
         
-        return downloadedPath
+        return saveFile(from: downloadedPath, id: id)
        
     }
+    
+    
+    private func saveFile(from url: URL, id: String) -> URL? {
+        
+        guard let data = try? Data(contentsOf: url) else {
+            print("No data found at downloadedPath.")
+            return nil
+        }
+        
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        
+        do {
+            try FileManager.default.createDirectory(at: documentsPath, withIntermediateDirectories: true)
+        } catch {
+            print("Error creating directory: \(error.localizedDescription)")
+            return nil
+        }
+        
+        let localURL = documentsPath.appendingPathComponent("\(id).m4a")
+        
+        
+        do {
+            if FileManager.default.fileExists(atPath: localURL.path()) {
+                try FileManager.default.removeItem(at: localURL)
+            }
+            try data.write(to: localURL)
+            print("Successfully saved file to \(localURL.path)")
+            return localURL
+        } catch {
+            print("Error saving file: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
     
     
 }

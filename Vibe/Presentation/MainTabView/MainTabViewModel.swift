@@ -58,18 +58,16 @@ final class MainTabViewModel: ObservableObject {
     
     func downloadAndSave(fileName: String, keyword: String, imgURL: String) async {
         do {
-            let downloadedPath = await youtubeDownloaderUseCase.downloadAndGetLocalURL(fileName: fileName, youtubeLink: keyword) { processes in
+            let idForDownloadedAudio = UUID().uuidString
+
+            let localURL = await youtubeDownloaderUseCase.downloadAndGetLocalURL(id: idForDownloadedAudio, fileName: fileName, youtubeLink: keyword) { processes in
                 DispatchQueue.main.async {
                     self.downloadingProcesses = processes
                 }
             }
-            guard let downloadedPath else { return }
-            
-            let idForDownloadedAudio = UUID().uuidString
-            let localURL = saveFile(from: downloadedPath, id: idForDownloadedAudio)
-            
             guard let localURL else { return }
             
+                        
             let duration = try await audioPlayerUseCase.getDuration(for: localURL)
             let downloadedAudio = DownloadedAudio(id: idForDownloadedAudio, title: fileName, originalURL: keyword, imgURL: imgURL, duration: duration)
                 
@@ -83,36 +81,5 @@ final class MainTabViewModel: ObservableObject {
     }
     
     
-    private func saveFile(from url: URL, id: String) -> URL? {
-        
-        guard let data = try? Data(contentsOf: url) else {
-            print("No data found at downloadedPath.")
-            return nil
-        }
-        
-        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        
-        do {
-            try FileManager.default.createDirectory(at: documentsPath, withIntermediateDirectories: true)
-        } catch {
-            print("Error creating directory: \(error.localizedDescription)")
-            return nil
-        }
-        
-        let localURL = documentsPath.appendingPathComponent("\(id).m4a")
-        
-        
-        do {
-            if FileManager.default.fileExists(atPath: localURL.path()) {
-                try FileManager.default.removeItem(at: localURL)
-            }
-            try data.write(to: localURL)
-            print("Successfully saved file to \(localURL.path)")
-            return localURL
-        } catch {
-            print("Error saving file: \(error.localizedDescription)")
-            return nil
-        }
-    }
 
 }
