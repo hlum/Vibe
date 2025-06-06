@@ -19,7 +19,7 @@ final class FloatingCurrentMusicViewModel: ObservableObject {
     @Published var currentPlaybackTime: Double = 0
     @Published var isPlaying: Bool = false
     @Published var currentAudio: DownloadedAudio?
-    @Published var isLooping: Bool = false
+    @Published var loopOption: LoopOption = .loopPlaylist
     
     private let audioPlayerUseCase: AudioPlayerUseCase
     private var cancellables = Set<AnyCancellable>()
@@ -39,8 +39,8 @@ final class FloatingCurrentMusicViewModel: ObservableObject {
         audioPlayerUseCase.currentAudioPublisher
             .assign(to: &$currentAudio)
         
-        audioPlayerUseCase.isLoopingPublisher
-            .assign(to: &$isLooping)
+        audioPlayerUseCase.loopOptionPublisher
+            .assign(to: &$loopOption)
     }
     
     func seekToTime(_ time: Double) {
@@ -63,8 +63,8 @@ final class FloatingCurrentMusicViewModel: ObservableObject {
         audioPlayerUseCase.playPrevious()
     }
     
-    func toggleLoop() {
-        audioPlayerUseCase.toggleLoop()
+    func changeLoopOption(_ loopOption: LoopOption) async {
+        await audioPlayerUseCase.changeLoopOption(loopOption)
     }
 }
 
@@ -210,14 +210,24 @@ extension FloatingCurrentMusicView {
                     }
                 }
                 
-                // Loop Button
-                Button(action: vm.toggleLoop) {
-                    Image(systemName: "repeat")
+                
+                Button {
+                    let allLoopOptions = LoopOption.allCases
+                    if let currentIndex = allLoopOptions.firstIndex(of: vm.loopOption) {
+                        withAnimation(.snappy) {
+                            let nextLoopOption = allLoopOptions[(currentIndex + 1) % allLoopOptions.count]
+                            Task {
+                                await vm.changeLoopOption(nextLoopOption)
+                            }
+                        }
+                    }
+                } label: {
+                    Image(systemName: vm.loopOption.imgName)
                         .font(.title2)
-                        .foregroundColor(vm.isLooping ? .green : .gray)
+                        .foregroundColor(.green)
                         .scaleEffect(CGFloat(1-(dragTranslation / 1000)))
                 }
-                
+
             } else {
                 Text("No audio playing")
                     .font(.title2)

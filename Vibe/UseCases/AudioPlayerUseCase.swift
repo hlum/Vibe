@@ -16,15 +16,15 @@ protocol AudioPlayerUseCase {
     var currentAudio: DownloadedAudio? { get }
     var allSongs: [DownloadedAudio] { get }
     var currentPlaylistSongs: [DownloadedAudio] { get }
-    var isLooping: Bool { get }
+    var loopingOption: LoopOption { get }
     
     var currentPlaybackTimePublisher: AnyPublisher<Double, Never> { get }
     var isPlayingPublisher: AnyPublisher<Bool, Never> { get }
     var currentAudioPublisher: AnyPublisher<DownloadedAudio?, Never> { get }
-    var isLoopingPublisher: AnyPublisher<Bool, Never> { get }
+    var loopOptionPublisher: AnyPublisher<LoopOption, Never> { get }
     
     func updateAllSongsList()
-    func updateCurrentPlaylistSongs(playlistType: PlaylistType)
+    func updateCurrentPlaylistSongs(playlistType: PlaylistType) async
     func getDuration(for url: URL) async throws -> Double
     func play(_ audio: DownloadedAudio)
     func pause()
@@ -33,11 +33,14 @@ protocol AudioPlayerUseCase {
     func seek(to time: Double)
     func playNext()
     func playPrevious()
-    func toggleLoop()
+    func changeLoopOption(_ loopOption: LoopOption) async
 }
+
+
 
 @MainActor
 final class AudioPlayerUseCaseImpl: AudioPlayerUseCase {
+    
     
     private let audioManager: AudioManagerRepository
     private let savedAudioUseCase: SavedAudioUseCase
@@ -45,7 +48,7 @@ final class AudioPlayerUseCaseImpl: AudioPlayerUseCase {
     @Published private(set) var allSongs: [DownloadedAudio] = []
     @Published private(set) var currentPlaylistSongs: [DownloadedAudio] = []
     
-    @Published private(set) var isLooping: Bool = true
+    @Published private(set) var loopingOption: LoopOption = .loopPlaylist
     private var currentIndex: Int = -1
     private var cancellables = Set<AnyCancellable>()
     private var playCommandHandler: Any?
@@ -85,9 +88,11 @@ final class AudioPlayerUseCaseImpl: AudioPlayerUseCase {
         audioManager.currentAudioPublisher
     }
     
-    var isLoopingPublisher: AnyPublisher<Bool, Never> {
-        $isLooping.eraseToAnyPublisher()
+    var loopOptionPublisher: AnyPublisher<LoopOption, Never> {
+        $loopingOption.eraseToAnyPublisher()
     }
+    
+    var currentPlayingPlaylistType: PlaylistType = .all
     
     init(audioManager: AudioManagerRepository, savedAudioUseCase: SavedAudioUseCase) {
         self.audioManager = audioManager
@@ -114,20 +119,21 @@ final class AudioPlayerUseCaseImpl: AudioPlayerUseCase {
         Task {
             do {
                 allSongs = try await savedAudioUseCase.getSavedAudios(playlistType: .all)
+                currentPlayingPlaylistType = .all
             } catch {
                 print("Error loading playlist: \(error.localizedDescription)")
             }
         }
     }
     
-    func updateCurrentPlaylistSongs(playlistType: PlaylistType) {
-        Task {
-            do {
-                
-                try await currentPlaylistSongs = savedAudioUseCase.getSavedAudios(playlistType: playlistType)
-            } catch {
-                print("Error updating currentPlaylist songs. \(error.localizedDescription)")
-            }
+    func updateCurrentPlaylistSongs(playlistType: PlaylistType) async {
+        do {
+            
+            try await currentPlaylistSongs = savedAudioUseCase.getSavedAudios(playlistType: playlistType)
+            currentPlayingPlaylistType = playlistType
+            
+        } catch {
+            print("Error updating currentPlaylist songs. \(error.localizedDescription)")
         }
     }
 
@@ -137,8 +143,18 @@ final class AudioPlayerUseCaseImpl: AudioPlayerUseCase {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 guard let self = self else { return }
-                print("Playback finished, isLooping: \(self.isLooping)")
-                if self.isLooping {
+                print("Playback finished, isLooping: \(self.loopingOption)")
+//                if self.isLooping {
+//                    self.playNext()
+//                }
+                
+                switch self.loopingOption {
+                case .loopPlaylist:
+                    self.playNext()
+                case .loopOneSong:
+                    self.play(currentPlaylistSongs[currentIndex])
+                case .shuffle:
+                    // Shuffling in the changeLoopOption() method so we just want to play next song
                     self.playNext()
                 }
             }
@@ -197,9 +213,29 @@ final class AudioPlayerUseCaseImpl: AudioPlayerUseCase {
         audioManager.play(currentPlaylistSongs[currentIndex])
     }
     
-    func toggleLoop() {
-        isLooping.toggle()
-        print("Loop toggled: \(isLooping)")
+    func changeLoopOption(_ loopOption: LoopOption) async {
+        self.loopingOption = loopOption
+        
+        switch loopOption {
+        case .loopPlaylist:
+            await updateCurrentPlaylistSongs(playlistType: currentPlayingPlaylistType)
+            print("Reorder the playlist")
+            
+            // Need to update the index too since it was shuffled and index is different
+            if let currentAudio,
+               let index = currentPlaylistSongs.firstIndex( where: {  $0.id == currentAudio.id } ) {
+                self.currentIndex = index
+                print("Current Index: \(currentIndex)")
+            }
+            
+        case .loopOneSong:
+            print("LoopOne song")
+        case .shuffle:
+            currentPlaylistSongs.shuffle()
+            print("Shuffle")
+        }
+        
+        print("Loop toggled: \(loopingOption)")
     }
     
     
