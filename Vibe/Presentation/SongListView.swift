@@ -179,6 +179,14 @@ struct SongListView: View {
                         isPlaying: vm.currentAudio?.id == audio.id && vm.isPlaying
                     )
                 }
+                .swipeActions(edge: .leading, allowsFullSwipe: true, content: {
+                    Button {
+                        selectedSongToAddToPlaylist = audio
+                    } label: {
+                        Image(systemName: "text.badge.plus")
+                    }
+                    .tint(.green)
+                })
                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                     Button {
                         Task {
@@ -189,13 +197,6 @@ struct SongListView: View {
                         Text("Delete")
                     }
                     .tint(.red)
-                    
-                    Button {
-                        selectedSongToAddToPlaylist = audio
-                    } label: {
-                        Image(systemName: "text.badge.plus")
-                    }
-                    .tint(.green)
                 }
             }
         }
