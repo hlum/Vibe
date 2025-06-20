@@ -18,6 +18,7 @@ struct SearchAndDownloadView: View {
     
     let download: (_ fileName: String, _ imgURL: String) -> Void
     let search: () -> Void
+    let loadMore: () -> Void
     
     let showingFloatingPanel: Bool
 
@@ -53,45 +54,52 @@ struct SearchAndDownloadView: View {
                 .padding()
                     
             ScrollView {
-                ForEach(searchResults, id: \.id.videoId) { result in
-                    HStack {
-                        AsyncImage(url: URL(string: result.snippet.thumbnail.medium.url), content: { image in
-                            image
-                                .resizable()
-                                .scaledToFit()
-                        }, placeholder: {
-                            ProgressView()
-                                .progressViewStyle(.circular)
-                        })
-                        .frame(width: 80, height: 80)
-                        .cornerRadius(10)
-                        .padding(.horizontal)
-                        VStack {
-                            Text(result.snippet.title)
-                        }
-                        
-                        Spacer()
-                        
-                        Button {
-                            fileName = result.snippet.title
-                            showFileNameInputAlert.toggle()
-                            keyWord = result.id.getYoutubeURL()
-                            imgURLOfSelectedVideo = result.snippet.thumbnail.medium.url
-                        } label: {
-                            ZStack {
-                                Image(systemName: "arrow.down.circle.fill")
-                                    .font(.title)
-                                    .tint(.white)
+                LazyVStack {
+                    ForEach(searchResults, id: \.id.uniqueID) { result in
+                        HStack {
+                            AsyncImage(url: URL(string: result.snippet.thumbnail.medium.url), content: { image in
+                                image
+                                    .resizable()
+                                    .scaledToFit()
+                            }, placeholder: {
+                                ProgressView()
+                                    .progressViewStyle(.circular)
+                            })
+                            .frame(width: 80, height: 80)
+                            .cornerRadius(10)
+                            .padding(.horizontal)
+                            VStack {
+                                Text(result.snippet.title)
                             }
-                            .frame(width: 40, height: 40)
-                            .background(.blue)
-                            .cornerRadius(30)
-                            .shadow(color: .gray.opacity(0.9), radius: 4, x: 0, y: 0)
-                            .padding(.trailing, 20)
+                            
+                            Spacer()
+                            
+                            Button {
+                                fileName = result.snippet.title
+                                showFileNameInputAlert.toggle()
+                                keyWord = result.id.getYoutubeURL()
+                                imgURLOfSelectedVideo = result.snippet.thumbnail.medium.url
+                            } label: {
+                                ZStack {
+                                    Image(systemName: "arrow.down.circle.fill")
+                                        .font(.title)
+                                        .tint(.white)
+                                }
+                                .frame(width: 40, height: 40)
+                                .background(.blue)
+                                .cornerRadius(30)
+                                .shadow(color: .gray.opacity(0.9), radius: 4, x: 0, y: 0)
+                                .padding(.trailing, 20)
+                            }
+                            
                         }
-                        
+                        .onAppear {
+                            if result.id.videoId == searchResults.last?.id.videoId {
+                                loadMore()
+                            }
+                        }
+                        Divider()
                     }
-                    Divider()
                 }
             }
             .padding(.bottom,showingFloatingPanel ? 100 : 0)
@@ -109,5 +117,5 @@ struct SearchAndDownloadView: View {
 }
 
 #Preview {
-    SearchAndDownloadView(keyWord: .constant("asd"), searchResults: .constant(YoutubeSearchItem.getDummyItems()), download: {fileName, imgURL in },search: {}, showingFloatingPanel: false)
+    SearchAndDownloadView(keyWord: .constant("asd"), searchResults: .constant(YoutubeSearchItem.getDummyItems()), download: {fileName, imgURL in },search: {},loadMore:{}, showingFloatingPanel: false)
 }

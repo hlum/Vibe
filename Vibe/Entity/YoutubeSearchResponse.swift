@@ -9,6 +9,7 @@ import Foundation
 
 struct YoutubeSearchResponse: Codable {
     let items: [YoutubeSearchItem]
+    let nextPageToken: String?
 }
 
 struct YoutubeSearchItem: Codable {
@@ -19,7 +20,7 @@ struct YoutubeSearchItem: Codable {
         let thumbnailInfo = ThumbnailInfo(url: "https://www.bigfootdigital.co.uk/wp-content/uploads/2020/07/image-optimisation-scaled.jpg")
         let thumbnail = Thumbnail(medium: thumbnailInfo)
         let snippet = Snippet(title: "Dummy Video Title", thumbnail: thumbnail)
-        let videoID = VideoID(videoId: "dQw4w9WgXcQ")
+        let videoID = VideoID(kind: "youtube#video", videoId: "dQw4w9WgXcQ")
         let item = YoutubeSearchItem(snippet: snippet, id: videoID)
         
         return [item,item,item,item,item,item,item,item,item]
@@ -28,6 +29,8 @@ struct YoutubeSearchItem: Codable {
 }
 
 struct VideoID: Codable {
+    let uniqueID: String = UUID().uuidString
+    let kind: String
     let videoId: String
     
     func getYoutubeURL() -> String {

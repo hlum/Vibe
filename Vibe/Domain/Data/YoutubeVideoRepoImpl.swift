@@ -25,20 +25,25 @@ final class YoutubeVideoRepoImpl: YoutubeRepository {
     
 
     
-    func fetchYoutubeVideos(searchWord: String) async throws -> [YoutubeSearchItem] {
+    func fetchYoutubeVideos(searchWord: String, nextPageToken: String?) async throws -> ([YoutubeSearchItem], nextPageToken: String?) {
         var components = URLComponents(string: "https://www.googleapis.com/youtube/v3/search")
         components?.queryItems = [
             URLQueryItem(name: "part", value: "snippet"),
             URLQueryItem(name: "q", value: searchWord),
             URLQueryItem(name: "type", value: "video"),
-            URLQueryItem(name: "maxResults", value: "30"),
+            URLQueryItem(name: "maxResults", value: "10"),
             URLQueryItem(name: "key", value: apiKey)
         ]
         
+        if let nextPageToken {
+            components?.queryItems?.append(
+                URLQueryItem(name: "pageToken", value: nextPageToken)
+            )
+        }
         
         guard let url = components?.url else {
             print("Cannot create URL")
-            return []
+            return ([], nil)
         }
         print(url)
         
@@ -51,38 +56,17 @@ final class YoutubeVideoRepoImpl: YoutubeRepository {
               response.statusCode == 200 else {
             print("Status code is not 200")
             print(rawString)
-            return []
+            return ([], nil)
         }
-        print(rawString)
+//        print(rawString)
 
         
         let decoder = JSONDecoder()
-        // Parse as generic JSON first to filter out non-video items
-        guard let jsonObject = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let itemsArray = jsonObject["items"] as? [[String: Any]] else {
-            print("Failed to parse JSON structure")
-            return []
-        }
+        let youtubeVideoSearchResponse = try decoder.decode(YoutubeSearchResponse.self, from: data)
         
-        // Filter to only video items before decoding
-        let videoItemsData = itemsArray.filter { item in
-            if let id = item["id"] as? [String: Any],
-               let kind = id["kind"] as? String {
-                return kind == "youtube#video"
-            }
-            return false
-        }
+        let filteredResponse = youtubeVideoSearchResponse.items.filter { $0.id.kind == "youtube#video" }
         
-        print("Total items received: \(itemsArray.count)")
-        print("Video items after filtering: \(videoItemsData.count)")
         
-        // Create filtered response data
-        let filteredResponse = ["items": videoItemsData]
-        let filteredData = try JSONSerialization.data(withJSONObject: filteredResponse)
-        
-        // Now decode with your existing model
-        let youtubeVideoSearchResponse = try decoder.decode(YoutubeSearchResponse.self, from: filteredData)
-        
-        return youtubeVideoSearchResponse.items
+        return (filteredResponse, youtubeVideoSearchResponse.nextPageToken)
     }
 }

@@ -15,6 +15,9 @@ final class MainTabViewModel: ObservableObject {
     @Published var keyword: String = ""
     @Published var currentAudio: DownloadedAudio?
     @Published var searchResults: [YoutubeSearchItem] = []
+    @Published var nextPageToken: String?
+    
+    @Published var isLoading: Bool = false
     
     private var youtubeDownloaderUseCase: YoutubeDownloaderUseCase
     private var savedAudioUseCase: SavedAudioUseCase
@@ -34,6 +37,14 @@ final class MainTabViewModel: ObservableObject {
         setupBinding()
     }
     
+    
+    deinit {
+        Task { @MainActor in
+            self.resetNextPageToken()
+        }
+    }
+
+    
     func setupBinding() {
 
         audioPlayerUseCase.currentAudioPublisher
@@ -42,9 +53,17 @@ final class MainTabViewModel: ObservableObject {
     }
     
     
+    
+    
+    
     func search() async {
         do {
-            self.searchResults = try await youtubeVideoSearchUseCase.search(keyword: keyword)
+            isLoading = true
+            let (searchResults, nextPageToken) = try await youtubeVideoSearchUseCase.search(keyword: keyword, nextPageToken: nextPageToken)
+            
+            self.searchResults = searchResults
+            self.nextPageToken = nextPageToken
+            isLoading = false
         } catch {
             if let decodingError = error as? DecodingError {
                 print("Decoding Error: \(decodingError.detailedDescription)")
@@ -54,6 +73,28 @@ final class MainTabViewModel: ObservableObject {
         }
     }
 
+    
+    func loadMore() async {
+        guard !isLoading else {
+            print("Still loading previous page.")
+            return
+        }
+
+        guard let token = nextPageToken else {
+            print("No more page to load.")
+            return
+        }
+        
+        do {
+            let (moreResults, token) = try await youtubeVideoSearchUseCase.search(keyword: keyword, nextPageToken: token)
+            self.searchResults.append(contentsOf: moreResults)
+            self.nextPageToken = token
+            searchResults.forEach({ print($0.id.videoId) })
+            isLoading = false
+        } catch {
+            print("Load more failed: \(error.localizedDescription)")
+        }
+    }
     
     
     func downloadAndSave(fileName: String, keyword: String, imgURL: String) async {
@@ -78,6 +119,11 @@ final class MainTabViewModel: ObservableObject {
             print("Error downloading: \(error.localizedDescription)")
         }
         
+    }
+    
+    
+    func resetNextPageToken() {
+        self.nextPageToken = nil
     }
     
     
