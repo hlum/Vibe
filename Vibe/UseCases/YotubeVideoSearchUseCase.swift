@@ -8,7 +8,7 @@
 import Foundation
 
 protocol YoutubeVideoSearchUseCase {
-    func search(keyword: String) async throws -> [YoutubeSearchItem]
+    func search(keyword: String, nextPageToken: String?) async throws -> ([YoutubeSearchItem], nextPageToken: String?)
 }
 
 final class YoutubeVideoSearchUseCaseImpl: YoutubeVideoSearchUseCase {
@@ -18,7 +18,7 @@ final class YoutubeVideoSearchUseCaseImpl: YoutubeVideoSearchUseCase {
         self.youtubeRepo = youtubeRepo
     }
     
-    func search(keyword: String) async throws -> [YoutubeSearchItem] {
-        try await youtubeRepo.fetchYoutubeVideos(searchWord: keyword)
+    func search(keyword: String, nextPageToken: String?) async throws -> ([YoutubeSearchItem], nextPageToken: String?) {
+        return try await youtubeRepo.fetchYoutubeVideos(searchWord: keyword, nextPageToken: nextPageToken)
     }
 }

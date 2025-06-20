@@ -54,7 +54,11 @@ struct MainTabView: View {
                         Task {
                             await vm.search()
                         }
-                    },showingFloatingPanel: vm.currentAudio != nil
+                    },loadMore: {
+                        Task {
+                            await vm.loadMore()
+                        }
+                    }, showingFloatingPanel: vm.currentAudio != nil
                     )
                 }
                 .tabItem {

@@ -8,5 +8,5 @@
 import Foundation
 
 protocol YoutubeRepository {
-    func fetchYoutubeVideos(searchWord: String) async throws -> [YoutubeSearchItem]
+    func fetchYoutubeVideos(searchWord: String, nextPageToken: String?) async throws -> ([YoutubeSearchItem], nextPageToken: String?)
 }
